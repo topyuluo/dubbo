@@ -24,6 +24,15 @@ import org.apache.dubbo.common.extension.SPI;
  *
  * @see org.apache.dubbo.remoting.Transporter#bind(org.apache.dubbo.common.URL, ChannelHandler)
  * @see org.apache.dubbo.remoting.Transporter#connect(org.apache.dubbo.common.URL, ChannelHandler)
+ *
+ *
+ * <p>
+ *     注册在Channel 上的消息处理器
+ *
+ *     可以处理连接的建立|断开|还可以处理读取到的数据，发送的数据以及捕获到的异常。
+ *
+ *     并且这是一个扩展点
+ * </p>
  */
 @SPI
 public interface ChannelHandler {

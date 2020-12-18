@@ -76,6 +76,25 @@ import java.util.concurrent.atomic.AtomicLong;
  * and Hierarchical Timing Wheels: data structures to efficiently implement a
  * timer facility'</a>.  More comprehensive slides are located
  * <a href="http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt">here</a>.
+ *
+ *
+ * <p>
+ *     时间轮指针转动，时间轮周期开始。
+ *
+ *      清理用户主动取消的定时任务，这些定时任务在用户取消时，会记录到 cancelledTimeouts 队列中。在每次指针转动的时候，时间轮都会清理该队列。
+ *
+ *          将缓存在 timeouts 队列中的定时任务转移到时间轮中对应的槽中。
+ *
+ *              根据当前指针定位对应槽，处理该槽位的双向链表中的定时任务。
+ *
+ *                      检测时间轮的状态。如果时间轮处于运行状态，则循环执行上述步骤，不断执行定时任务。
+ *                      如果时间轮处于停止状态，则执行下面的步骤获取到未被执行的定时任务并加入 unprocessedTimeouts 队列：
+ *                      遍历时间轮中每个槽位，并调用 clearTimeouts() 方法；对 timeouts 队列中未被加入槽中循环调用 poll()。
+ *
+ *                              最后再次清理 cancelledTimeouts 队列中用户主动取消的定时任务。
+ *
+ *              上述核心逻辑在 HashedWheelTimer$Worker.run() 方法中，若你感兴趣的话，可以翻看一下源码进行分析
+ * </p>
  */
 public class HashedWheelTimer implements Timer {
 
@@ -550,6 +569,13 @@ public class HashedWheelTimer implements Timer {
         }
     }
 
+    /**
+     * <p>
+     *     Timeout接口的唯一实现
+     *      - 时间轮中双向链表的节点，即定时任务TimerTask 在HashedWheelTimer 中的容器
+     *      - 定时任务 TimerTask 提交到HashedWheelTimer 之后返回的句柄 Handle ,  用于在时间轮外部查看和控制定时任务
+     * </p>
+     */
     private static final class HashedWheelTimeout implements Timeout {
 
         private static final int ST_INIT = 0;
@@ -688,6 +714,14 @@ public class HashedWheelTimer implements Timer {
      * Bucket that stores HashedWheelTimeouts. These are stored in a linked-list like datastructure to allow easy
      * removal of HashedWheelTimeouts in the middle. Also the HashedWheelTimeout act as nodes themself and so no
      * extra object creation is needed.
+     * <p>
+     *     时间轮中的一个槽，时间轮中的槽实际上就是一个用于缓存和管理双向链表的容器，
+     *     双向链表中的每一个节点就是一个 HashedWheelTimeout 对象，也就关联了一个 TimerTask 定时任务。
+     *
+     *
+     *     双向链表的首尾两个节点，分别是 head 和 tail 两个字段，
+     *     再加上每个 HashedWheelTimeout 节点均持有前驱和后继的引用，这样就可以正向或是逆向遍历整个双向链表了。
+     * </p>
      */
     private static final class HashedWheelBucket {
 

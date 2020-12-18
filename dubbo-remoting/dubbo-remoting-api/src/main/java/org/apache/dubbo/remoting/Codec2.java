@@ -32,6 +32,9 @@ public interface Codec2 {
     Object decode(Channel channel, ChannelBuffer buffer) throws IOException;
 
 
+    /**
+     * 处理 TCP传输时 粘包和拆包
+     */
     enum DecodeResult {
         NEED_MORE_INPUT, SKIP_SOME_INPUT
     }

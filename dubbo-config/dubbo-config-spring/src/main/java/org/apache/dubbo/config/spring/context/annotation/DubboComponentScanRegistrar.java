@@ -46,6 +46,10 @@ import static org.springframework.beans.factory.support.BeanDefinitionBuilder.ro
  * @see ImportBeanDefinitionRegistrar
  * @see ServiceAnnotationBeanPostProcessor
  * @see ReferenceAnnotationBeanPostProcessor
+ *
+ * 实例化一些
+ * 　
+ *
  * @since 2.5.7
  */
 public class DubboComponentScanRegistrar implements ImportBeanDefinitionRegistrar {

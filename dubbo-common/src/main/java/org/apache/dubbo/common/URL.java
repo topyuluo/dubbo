@@ -88,8 +88,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.VERSION_KEY;
  * @see java.net.URL
  * @see java.net.URI
  */
-public /*final**/
-class URL implements Serializable {
+public final class URL implements Serializable {
 
     private static final long serialVersionUID = -1985165475234910535L;
 
@@ -187,14 +186,7 @@ class URL implements Serializable {
         this(protocol, username, password, host, port, path, parameters, toMethodParameters(parameters));
     }
 
-    public URL(String protocol,
-               String username,
-               String password,
-               String host,
-               int port,
-               String path,
-               Map<String, String> parameters,
-               Map<String, Map<String, String>> methodParameters) {
+    public URL(String protocol, String username, String password, String host, int port, String path, Map<String, String> parameters, Map<String, Map<String, String>> methodParameters) {
         if (StringUtils.isEmpty(username)
                 && StringUtils.isNotEmpty(password)) {
             throw new IllegalArgumentException("Invalid url, password without username!");

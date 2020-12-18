@@ -48,8 +48,8 @@ public class InvokerInvocationHandler implements InvocationHandler {
         if (method.getDeclaringClass() == Object.class) {
             return method.invoke(invoker, args);
         }
-        String methodName = method.getName();
-        Class<?>[] parameterTypes = method.getParameterTypes();
+        String methodName = method.getName(); //获取方法的名字
+        Class<?>[] parameterTypes = method.getParameterTypes();  //获取方法的参数类型
         if (parameterTypes.length == 0) {
             if ("toString".equals(methodName)) {
                 return invoker.toString();

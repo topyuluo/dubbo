@@ -83,24 +83,24 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
     protected Result doInvoke(final Invocation invocation) throws Throwable {
         RpcInvocation inv = (RpcInvocation) invocation;
         final String methodName = RpcUtils.getMethodName(invocation);
-        inv.setAttachment(PATH_KEY, getUrl().getPath());
-        inv.setAttachment(VERSION_KEY, version);
+        inv.setAttachment(PATH_KEY, getUrl().getPath()); //设置path 到 attachment 中
+        inv.setAttachment(VERSION_KEY, version); // 设置version 到 attachment中
 
         ExchangeClient currentClient;
-        if (clients.length == 1) {
+        if (clients.length == 1) {  //选择client
             currentClient = clients[0];
         } else {
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
         try {
-            boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
-            int timeout = calculateTimeout(invocation, methodName);
+            boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);  //是否oneway 方式发送
+            int timeout = calculateTimeout(invocation, methodName); //获取超时时间
             if (isOneway) {
                 boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
                 currentClient.send(inv, isSent);
                 return AsyncRpcResult.newDefaultAsyncResult(invocation);
             } else {
-                ExecutorService executor = getCallbackExecutor(getUrl(), inv);
+                ExecutorService executor = getCallbackExecutor(getUrl(), inv); //获取线程池
                 CompletableFuture<AppResponse> appResponseFuture =
                         currentClient.request(inv, timeout, executor).thenApply(obj -> (AppResponse) obj);
                 // save for 2.6.x compatibility, for example, TraceFilter in Zipkin uses com.alibaba.xxx.FutureAdapter

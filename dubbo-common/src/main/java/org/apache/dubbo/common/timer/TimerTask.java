@@ -21,6 +21,23 @@ import java.util.concurrent.TimeUnit;
 /**
  * A task which is executed after the delay specified with
  * {@link Timer#newTimeout(TimerTask, long, TimeUnit)} (TimerTask, long, TimeUnit)}.
+ *
+ *
+ * <p>
+ *     所有的定时任务都要实现 TimerTask 接口 ，
+ *     Timeout 和 TimerTask 对象一一对应，两者的关系类似于线程返回的Future 对象与提交到线程池中的任务的关系。
+ *     通过Timerout 不仅可以查看定时任务的状态，还可以操作定时任务
+ *      - cancel
+ *      - isCancelled
+ *      - isExpired
+ *      - task
+ *      - timer
+ *
+ *      使用场景：
+ *          失败重试
+ *          周期性定时任务
+ *
+ * </p>
  */
 public interface TimerTask {
 

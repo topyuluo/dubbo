@@ -46,14 +46,17 @@ public abstract class AbstractProtocol implements Protocol {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
+    //存储出去的服务集合，其中的key 通过 protocolUtils.serviceKey()方法创建的服务标识
     protected final Map<String, Exporter<?>> exporterMap = new ConcurrentHashMap<String, Exporter<?>>();
 
     /**
      * <host:port, ProtocolServer>
+     *     记录了全部的ProtocolServer 实例 ， 其中的Key是host和 Port组成的字符串 value 是监听改地址的ProtocolServer
      */
     protected final Map<String, ProtocolServer> serverMap = new ConcurrentHashMap<>();
 
     //TODO SoftReference
+    // 服务引用的集合
     protected final Set<Invoker<?>> invokers = new ConcurrentHashSet<Invoker<?>>();
 
     protected static String serviceKey(URL url) {
@@ -78,7 +81,7 @@ public abstract class AbstractProtocol implements Protocol {
                     if (logger.isInfoEnabled()) {
                         logger.info("Destroy reference: " + invoker.getUrl());
                     }
-                    invoker.destroy();
+                    invoker.destroy();  // 关闭全部的服务引用
                 } catch (Throwable t) {
                     logger.warn(t.getMessage(), t);
                 }
@@ -91,7 +94,7 @@ public abstract class AbstractProtocol implements Protocol {
                     if (logger.isInfoEnabled()) {
                         logger.info("Unexport service: " + exporter.getInvoker().getUrl());
                     }
-                    exporter.unexport();
+                    exporter.unexport();  // 关闭暴漏出去的服务
                 } catch (Throwable t) {
                     logger.warn(t.getMessage(), t);
                 }

@@ -67,6 +67,10 @@ import static org.apache.dubbo.registry.Constants.REGISTRY__LOCAL_FILE_CACHE_ENA
 
 /**
  * AbstractRegistry. (SPI, Prototype, ThreadSafe)
+ *
+ * Registry 的所有实现类 都继承了  AbstractRegistry
+ *
+ * Registry 会把当前节点订阅的URL 信息缓存到本地的Properties文件中 。
  */
 public abstract class AbstractRegistry implements Registry {
 
@@ -79,6 +83,8 @@ public abstract class AbstractRegistry implements Registry {
     // Log output
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     // Local disk cache, where the special key value.registries records the list of registry centers, and the others are the list of notified service providers
+
+    /** 本地的properties 文件缓存 ， poperties是加载到内存的properties 对象 ， file 是磁盘上对应的文件 */
     private final Properties properties = new Properties();
     // File cache timing writing
     private final ExecutorService registryCacheExecutor = Executors.newFixedThreadPool(1, new NamedThreadFactory("DubboSaveRegistryCache", true));
@@ -89,6 +95,8 @@ public abstract class AbstractRegistry implements Registry {
     private final Set<URL> registered = new ConcurrentHashSet<>();
     private final ConcurrentMap<URL, Set<NotifyListener>> subscribed = new ConcurrentHashMap<>();
     private final ConcurrentMap<URL, Map<String, List<URL>>> notified = new ConcurrentHashMap<>();
+
+    /** 该URL 包含了创建该 Registry 对象的全部配置信息 ， 是 AbstractRegistryFactory 修改后的产物*/
     private URL registryUrl;
     // Local disk cache file
     private File file;

@@ -79,6 +79,7 @@ public class JavassistCompiler extends AbstractCompiler {
         // compile
         ClassLoader classLoader = org.apache.dubbo.common.utils.ClassUtils.getCallerClassLoader(getClass());
         CtClass cls = builder.build(classLoader);
+
         return cls.toClass(classLoader, JavassistCompiler.class.getProtectionDomain());
     }
 

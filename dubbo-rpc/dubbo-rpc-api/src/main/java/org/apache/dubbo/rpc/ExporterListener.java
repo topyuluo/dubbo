@@ -20,6 +20,8 @@ import org.apache.dubbo.common.extension.SPI;
 
 /**
  * ExporterListener. (SPI, Singleton, ThreadSafe)
+ *
+ * 为了监听服务发布事件以及取消暴漏事件 ， Dubbo 定义了一个SPI扩展接口 ，
  */
 @SPI
 public interface ExporterListener {
@@ -30,6 +32,9 @@ public interface ExporterListener {
      * @param exporter
      * @throws RpcException
      * @see org.apache.dubbo.rpc.Protocol#export(Invoker)
+     *
+     *
+     * 当有服务发布时，会触发该方法
      */
     void exported(Exporter<?> exporter) throws RpcException;
 
@@ -39,6 +44,8 @@ public interface ExporterListener {
      * @param exporter
      * @throws RpcException
      * @see org.apache.dubbo.rpc.Exporter#unexport()
+     *
+     * 当有服务取消发布的时候 ，会触发该方法
      */
     void unexported(Exporter<?> exporter);
 

@@ -30,6 +30,7 @@ import java.util.Set;
 
 /**
  * SpringExtensionFactory
+ * 将属性名称作为springBean的名称，从spring容器中获取
  */
 public class SpringExtensionFactory implements ExtensionFactory {
     private static final Logger logger = LoggerFactory.getLogger(SpringExtensionFactory.class);

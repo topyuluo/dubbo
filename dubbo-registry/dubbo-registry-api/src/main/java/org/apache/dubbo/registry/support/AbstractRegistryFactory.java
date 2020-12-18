@@ -42,6 +42,12 @@ import static org.apache.dubbo.rpc.cluster.Constants.REFER_KEY;
  * AbstractRegistryFactory. (SPI, Singleton, ThreadSafe)
  *
  * @see org.apache.dubbo.registry.RegistryFactory
+ *
+ *
+ * <p>
+ *     是一个实现了RegistryFactory接口的抽象类， 提供了规范的URL操作，以及缓存Registry对象的公共能力
+ *     其中，缓存Registry 对象是使用HashMap<>
+ * </p>
  */
 public abstract class AbstractRegistryFactory implements RegistryFactory {
 
@@ -99,6 +105,8 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
 
     @Override
     public Registry getRegistry(URL url) {
+
+
         if (destroyed.get()) {
             LOGGER.warn("All registry instances have been destroyed, failed to fetch any instance. " +
                     "Usually, this means no need to try to do unnecessary redundant resource clearance, all registries has been taken care of.");
@@ -110,19 +118,24 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
                 .addParameter(INTERFACE_KEY, RegistryService.class.getName())
                 .removeParameters(EXPORT_KEY, REFER_KEY)
                 .build();
+
         String key = createRegistryCacheKey(url);
         // Lock the registry access process to ensure a single instance of the registry
         LOCK.lock();
         try {
+
+            // 访问缓存
             Registry registry = REGISTRIES.get(key);
             if (registry != null) {
                 return registry;
             }
             //create registry by spi/ioc
+            // 缓存未命中，创建 Registry 实例
             registry = createRegistry(url);
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);
             }
+            // 写入缓存
             REGISTRIES.put(key, registry);
             return registry;
         } finally {

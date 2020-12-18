@@ -43,6 +43,10 @@ public class DynamicChannelBuffer extends AbstractChannelBuffer {
         buffer = factory.getBuffer(estimatedLength);
     }
 
+    /**
+     * 检测底层 ChannelBuffer 对象的空间不足，则会创建一个新的ChannelBuffer 将原来的数据拷贝到新ChannelBuffer 中。
+     * @param minWritableBytes
+     */
     @Override
     public void ensureWritableBytes(int minWritableBytes) {
         if (minWritableBytes <= writableBytes()) {

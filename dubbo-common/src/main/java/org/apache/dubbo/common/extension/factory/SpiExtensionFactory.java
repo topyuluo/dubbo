@@ -22,6 +22,7 @@ import org.apache.dubbo.common.extension.SPI;
 
 /**
  * SpiExtensionFactory
+ * 根据扩展接口 获取响应的适配器， 没有找到属性名称
  */
 public class SpiExtensionFactory implements ExtensionFactory {
 

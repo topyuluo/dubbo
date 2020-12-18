@@ -24,6 +24,14 @@ import org.apache.dubbo.common.URL;
  *
  * @see org.apache.dubbo.registry.RegistryFactory#getRegistry(URL)
  * @see org.apache.dubbo.registry.support.AbstractRegistry
+ *
+ * <o>
+ *     表示一个拥有注册中心能力的节点， 其中 reExportRegister 和 reExportUnRegister  都是委托给RegistryService中的相应方法
+ *
+ *     每个对应的registry 实现类 都有对应的Factory实现
+ *     每个对应的 registryFactory 工厂负责创建对应的registry对象
+ *
+ * </o>
  */
 public interface Registry extends Node, RegistryService {
     default void reExportRegister(URL url) {

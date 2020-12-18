@@ -26,6 +26,13 @@ import java.util.List;
 
 /**
  * AdaptiveExtensionFactory
+ *
+ * <p>
+ *     不实现具体的功能，而是用来适配 ExtensionFactory 的 SPIExtensionFactory 和 SpringExtensionFactory
+ *     AdaptiveExtensionFactory 会根据运行时的一些状态来调用ExtensionFactory的哪个实现。
+ *
+ *     List<ExtensionFactory>  factories 中封装 了  SPIExtensionFactory 和  SpringExtensionFactory
+ * </p>
  */
 @Adaptive
 public class AdaptiveExtensionFactory implements ExtensionFactory {

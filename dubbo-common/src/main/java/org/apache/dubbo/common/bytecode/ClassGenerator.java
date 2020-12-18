@@ -31,6 +31,7 @@ import org.apache.dubbo.common.utils.ClassUtils;
 import org.apache.dubbo.common.utils.ReflectUtils;
 import org.apache.dubbo.common.utils.StringUtils;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -318,6 +319,8 @@ public final class ClassGenerator {
                         mCtc.addMethod(CtNewMethod.copy(getCtMethod(mCopyMethods.get(code.substring(1))),
                                 code.substring(1, code.indexOf('(')), mCtc, null));
                     } else {
+
+                        System.out.println(code);
                         mCtc.addMethod(CtNewMethod.make(code, mCtc));
                     }
                 }
@@ -336,6 +339,11 @@ public final class ClassGenerator {
                                 CtNewConstructor.make(code.replaceFirst(SIMPLE_NAME_TAG, sn[sn.length - 1]), mCtc));
                     }
                 }
+            }
+            try {
+                mCtc.writeFile("d:/");
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             return mCtc.toClass(loader, pd);
         } catch (RuntimeException e) {

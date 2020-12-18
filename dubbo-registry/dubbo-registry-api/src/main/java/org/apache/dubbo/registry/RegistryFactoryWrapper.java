@@ -22,6 +22,11 @@ import org.apache.dubbo.common.extension.ExtensionLoader;
 
 import java.util.Collections;
 
+
+/**
+ * 接口的装饰类：
+ *  底层在创建RegistryFactory 创建的 Registry 对象外层风赚了一个 ListenerRegistryWrapper
+ */
 public class RegistryFactoryWrapper implements RegistryFactory {
     private RegistryFactory registryFactory;
 

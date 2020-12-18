@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Represent a application which is using Dubbo and store basic metadata info for using
  * during the processing of RPC invoking.
  * <p>
+ *     包含了很多已经发布的 provider model 和  consumer model
  * ApplicationModel includes many ProviderModel which is about published services
  * and many Consumer Model which is about subscribed services.
  * <p>
@@ -75,6 +76,12 @@ public class ApplicationModel {
         return getServiceRepository().lookupReferredService(serviceKey);
     }
 
+
+    /**
+     *  <p>
+     *       获取 FrameworkExt 的 ExtensionLoader
+     *  </p>
+     */
     private static final ExtensionLoader<FrameworkExt> LOADER = ExtensionLoader.getExtensionLoader(FrameworkExt.class);
 
     public static void initFrameworkExts() {

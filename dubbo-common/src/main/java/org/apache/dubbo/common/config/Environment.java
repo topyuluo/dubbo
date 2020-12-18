@@ -31,12 +31,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ *
+ * <p>
+ *     用来存储配置的信息  在启动的过程中会从应用的各个地方加载配置后  ，  放入到Environment中
+ * </p>
+ */
 public class Environment extends LifecycleAdapter implements FrameworkExt {
     public static final String NAME = "environment";
 
+    // 加载 dubbo.properties 配置文件中的配置信息
     private final PropertiesConfiguration propertiesConfiguration;
+    // 加载系统的一些基本信息
     private final SystemConfiguration systemConfiguration;
+    //  加载系统环境配置
     private final EnvironmentConfiguration environmentConfiguration;
+
+    //配置的扩展配置，提供了set方法 ，可以设置值
     private final InmemoryConfiguration externalConfiguration;
     private final InmemoryConfiguration appExternalConfiguration;
 
@@ -60,9 +71,11 @@ public class Environment extends LifecycleAdapter implements FrameworkExt {
     @Override
     public void initialize() throws IllegalStateException {
         ConfigManager configManager = ApplicationModel.getConfigManager();
+        // 获取配置中心的配置信息
         Optional<Collection<ConfigCenterConfig>> defaultConfigs = configManager.getDefaultConfigCenter();
         defaultConfigs.ifPresent(configs -> {
             for (ConfigCenterConfig config : configs) {
+                // 配置信息保存
                 this.setExternalConfigMap(config.getExternalConfiguration());
                 this.setAppExternalConfigMap(config.getAppExternalConfiguration());
             }
@@ -111,6 +124,11 @@ public class Environment extends LifecycleAdapter implements FrameworkExt {
      *
      * @param config
      * @return
+     *
+     *
+     * <p>
+     *     从各种数据源 筛选出有用的信息
+     * </p>
      */
     public synchronized CompositeConfiguration getPrefixedConfiguration(AbstractConfig config) {
         CompositeConfiguration prefixedConfiguration = new CompositeConfiguration(config.getPrefix(), config.getId());

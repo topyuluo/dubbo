@@ -48,6 +48,7 @@ public class DubboBootstrapApplicationListener extends OneTimeExecutionApplicati
 
     @Override
     public void onApplicationContextEvent(ApplicationContextEvent event) {
+        System.out.println("----------DubboBootstrapApplicationListener -onApplicationContextEvent 接收到事件:" +  event.toString());
         if (event instanceof ContextRefreshedEvent) {
             onContextRefreshedEvent((ContextRefreshedEvent) event);
         } else if (event instanceof ContextClosedEvent) {
@@ -56,10 +57,12 @@ public class DubboBootstrapApplicationListener extends OneTimeExecutionApplicati
     }
 
     private void onContextRefreshedEvent(ContextRefreshedEvent event) {
+        System.out.println("DubboBootstrapApplicationListener - onContextRefreshedEvent start 启动 ...... ");
         dubboBootstrap.start();
     }
 
     private void onContextClosedEvent(ContextClosedEvent event) {
+        System.out.println("DubboBootstrapApplicationListener- onContextClosedEvent start 终止 ...... ");
         dubboBootstrap.stop();
     }
 

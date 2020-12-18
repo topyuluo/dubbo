@@ -100,6 +100,9 @@ public abstract class Proxy {
 
         // use interface class name list as key.
         String key = sb.toString();
+        System.out.println("------------------------------Proxy------------------------------");
+        System.out.println( key);
+        System.out.println("------------------------------------------------------------------");
 
         // get cache by class loader.
         final Map<String, Object> cache;

@@ -43,6 +43,9 @@ import java.util.function.Function;
  * @serial Don't change the class name and package name.
  * @see org.apache.dubbo.rpc.Invoker#invoke(Invocation)
  * @see AppResponse
+ *
+ * Invoker.invoke（）方法的返回值
+ *
  */
 public interface Result extends Serializable {
 
@@ -50,15 +53,20 @@ public interface Result extends Serializable {
      * Get invoke result.
      *
      * @return result. if no result return null.
+     *
+     * 获取设置此次调用的返回值
      */
     Object getValue();
 
+    //
     void setValue(Object value);
 
     /**
      * Get exception.
      *
      * @return exception. if no exception return null.
+     *
+     * 如果此次调用发生异常，则可以通过下面三个方法获取
      */
     Throwable getException();
 
@@ -84,6 +92,9 @@ public interface Result extends Serializable {
      *
      * @return result.
      * @throws if has exception throw it.
+     *
+     *
+     * 复合操作 ，如果有异常 直接抛出异常  如果没有 则返回结果
      */
     Object recreate() throws Throwable;
 

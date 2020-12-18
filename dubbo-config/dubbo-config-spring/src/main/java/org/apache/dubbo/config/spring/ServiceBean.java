@@ -36,6 +36,9 @@ import org.springframework.context.ApplicationEventPublisherAware;
  * ServiceFactoryBean
  *
  * @export
+ * 
+ * 每一个暴漏出去的服务都会生成一个ServiceBean
+ *  服务暴漏 spi 机制 都和这个类有关  ， 该类继承了  ServiceConfig
  */
 public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean, DisposableBean,
         ApplicationContextAware, BeanNameAware, ApplicationEventPublisherAware {
@@ -81,6 +84,11 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return service;
     }
 
+    /**
+     * 该类初始化完成之后
+     *  调用该方法 完成一些属性的设值
+     * @throws Exception
+     */
     @Override
     public void afterPropertiesSet() throws Exception {
         if (StringUtils.isEmpty(getPath())) {

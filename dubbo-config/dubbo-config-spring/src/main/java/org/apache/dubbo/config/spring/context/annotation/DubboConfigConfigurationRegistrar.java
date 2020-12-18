@@ -34,9 +34,20 @@ import static org.apache.dubbo.config.spring.util.DubboBeanUtils.registerCommonB
  * @see DubboConfigConfiguration
  * @see Ordered
  * @since 2.5.8
+ *
+ * <p>
+ *     向容器中注册组件
+ *          实现 importBeanDefinitionRegister 接口的类拥有了向容器中 注册Bean的能力
+ *
+ * </p>
  */
 public class DubboConfigConfigurationRegistrar implements ImportBeanDefinitionRegistrar {
 
+    /**
+     *
+     * @param importingClassMetadata  当前类的注解信息
+     * @param registry  像容器中注册
+     */
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 

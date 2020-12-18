@@ -24,6 +24,12 @@ import org.apache.dubbo.common.extension.SPI;
  * RegistryFactory. (SPI, Singleton, ThreadSafe)
  *
  * @see org.apache.dubbo.registry.support.AbstractRegistryFactory
+ *
+ * <p>
+ *     RegistryFactory 是 Registery 的工厂接口， 负责创建Registery 对象。
+ *     @SPI 注解指定了默认的扩展名为  dubbo ,
+ *     @Adaptive 注解表示会生成适配器类，并根据URL 参数中的protocol 参数值选定响应的实现
+ * </p>
  */
 @SPI("dubbo")
 public interface RegistryFactory {

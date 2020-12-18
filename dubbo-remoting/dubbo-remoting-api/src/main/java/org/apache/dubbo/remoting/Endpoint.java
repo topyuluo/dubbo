@@ -27,6 +27,13 @@ import java.net.InetSocketAddress;
  * @see org.apache.dubbo.remoting.Channel
  * @see org.apache.dubbo.remoting.Client
  * @see RemotingServer
+ *
+ *
+ * <p>
+ *     抽象除了一个端点的概念
+ *          通过ip和port唯一确定一个端点 ， 两个端点之间会创建TCP连接 ， 也可以双向传输数据
+ *          dubbo 将EndPoint 之间的TCP连接抽象位通道， 将发起请求的EndPoint 抽象为客户端 ， 将接收请求的EndPoint 抽象为服务端
+ * </p>
  */
 public interface Endpoint {
 

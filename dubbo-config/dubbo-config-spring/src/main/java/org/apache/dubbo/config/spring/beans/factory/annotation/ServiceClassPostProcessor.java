@@ -82,7 +82,6 @@ import static org.springframework.util.ClassUtils.resolveClassName;
 /**
  * {@link BeanFactoryPostProcessor} used for processing of {@link Service @Service} annotated classes. it's also the
  * infrastructure class of XML {@link BeanDefinitionParser} on &lt;dubbbo:annotation /&gt;
- *
  * @see AnnotationBeanDefinitionParser
  * @see BeanDefinitionRegistryPostProcessor
  * @since 2.7.7
@@ -142,36 +141,38 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
 
     /**
      * Registers Beans whose classes was annotated {@link Service}
-     *
      * @param packagesToScan The base packages to scan
      * @param registry       {@link BeanDefinitionRegistry}
      */
     private void registerServiceBeans(Set<String> packagesToScan, BeanDefinitionRegistry registry) {
-
+        // 定义扫描对象，该类继承了ClassPathBeanDefinitionScanner类
         DubboClassPathBeanDefinitionScanner scanner =
                 new DubboClassPathBeanDefinitionScanner(registry, environment, resourceLoader);
-
+        // beanName解析器
         BeanNameGenerator beanNameGenerator = resolveBeanNameGenerator(registry);
 
         scanner.setBeanNameGenerator(beanNameGenerator);
 
         // refactor @since 2.7.7
+        // 这行代码很重要，添加了过滤器， 一个注解过滤器，用来过滤出来写了@Service注解的对象
         serviceAnnotationTypes.forEach(annotationType -> {
             scanner.addIncludeFilter(new AnnotationTypeFilter(annotationType));
         });
-
+        // 扫描正式开始，遍历包
         for (String packageToScan : packagesToScan) {
 
             // Registers @Service Bean first
             scanner.scan(packageToScan);
 
             // Finds all BeanDefinitionHolders of @Service whether @ComponentScan scans or not.
+            // 开始查找添加了@Service注解的类
             Set<BeanDefinitionHolder> beanDefinitionHolders =
                     findServiceBeanDefinitionHolders(scanner, packageToScan, registry, beanNameGenerator);
-
+            // 找到了则不为空
             if (!CollectionUtils.isEmpty(beanDefinitionHolders)) {
 
                 for (BeanDefinitionHolder beanDefinitionHolder : beanDefinitionHolders) {
+                    // 注册serviceBean
                     registerServiceBean(beanDefinitionHolder, registry, scanner);
                 }
 
@@ -198,7 +199,6 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
      * It'd better to use BeanNameGenerator instance that should reference
      * {@link ConfigurationClassPostProcessor#componentScanBeanNameGenerator},
      * thus it maybe a potential problem on bean name generation.
-     *
      * @param registry {@link BeanDefinitionRegistry}
      * @return {@link BeanNameGenerator} instance
      * @see SingletonBeanRegistry
@@ -237,7 +237,6 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
     /**
      * Finds a {@link Set} of {@link BeanDefinitionHolder BeanDefinitionHolders} whose bean type annotated
      * {@link Service} Annotation.
-     *
      * @param scanner       {@link ClassPathBeanDefinitionScanner}
      * @param packageToScan pachage to scan
      * @param registry      {@link BeanDefinitionRegistry}
@@ -266,7 +265,6 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
 
     /**
      * Registers {@link ServiceBean} from new annotated {@link Service} {@link BeanDefinition}
-     *
      * @param beanDefinitionHolder
      * @param registry
      * @param scanner
@@ -275,27 +273,30 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
      */
     private void registerServiceBean(BeanDefinitionHolder beanDefinitionHolder, BeanDefinitionRegistry registry,
                                      DubboClassPathBeanDefinitionScanner scanner) {
-
+        // 服务接口类对象
         Class<?> beanClass = resolveClass(beanDefinitionHolder);
-
+        //找到@service注解
         Annotation service = findServiceAnnotation(beanClass);
 
         /**
          * The {@link AnnotationAttributes} of @Service annotation
          */
+        // 接口服务的实现类对象
         AnnotationAttributes serviceAnnotationAttributes = getAnnotationAttributes(service, false, false);
 
         Class<?> interfaceClass = resolveServiceInterfaceClass(serviceAnnotationAttributes, beanClass);
-
+        // 得到bean的名称
         String annotatedServiceBeanName = beanDefinitionHolder.getBeanName();
 
         AbstractBeanDefinition serviceBeanDefinition =
                 buildServiceBeanDefinition(service, serviceAnnotationAttributes, interfaceClass, annotatedServiceBeanName);
 
         // ServiceBean Bean name
+        // 构建ServuceBean的名称
         String beanName = generateServiceBeanName(serviceAnnotationAttributes, interfaceClass);
-
+        // 校验Bean是否重复
         if (scanner.checkCandidate(beanName, serviceBeanDefinition)) { // check duplicated candidate bean
+            // 调用BeanDefinitionRegistry注册。
             registry.registerBeanDefinition(beanName, serviceBeanDefinition);
 
             if (logger.isInfoEnabled()) {
@@ -317,7 +318,6 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
 
     /**
      * Find the {@link Annotation annotation} of @Service
-     *
      * @param beanClass the {@link Class class} of Bean
      * @return <code>null</code> if not found
      * @since 2.7.3
@@ -333,7 +333,6 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
 
     /**
      * Generates the bean name of {@link ServiceBean}
-     *
      * @param serviceAnnotationAttributes
      * @param interfaceClass              the class of interface annotated {@link Service}
      * @return ServiceBean@interfaceClassName#annotatedServiceBeanName
@@ -375,25 +374,28 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
 
     /**
      * Build the {@link AbstractBeanDefinition Bean Definition}
-     *
      * @param serviceAnnotation
      * @param serviceAnnotationAttributes
      * @param interfaceClass
      * @param annotatedServiceBeanName
      * @return
      * @since 2.7.3
+     *
+     * <p>
+     *     用来构建ServiceBean对象 每个暴漏出去的对象  最终都会构建一个ServiceBean
+     * </p>
      */
     private AbstractBeanDefinition buildServiceBeanDefinition(Annotation serviceAnnotation,
                                                               AnnotationAttributes serviceAnnotationAttributes,
                                                               Class<?> interfaceClass,
                                                               String annotatedServiceBeanName) {
-
+        // 生成ServiceBean对象BeanDefinitionBuilder
         BeanDefinitionBuilder builder = rootBeanDefinition(ServiceBean.class);
-
+        // 获取beanDefinition
         AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
-
+        // 属性集合
         MutablePropertyValues propertyValues = beanDefinition.getPropertyValues();
-
+        // 忽略的属性,指的是AnnotationPropertyValuesAdapter中，不把以下属性放到PropertyValues中去
         String[] ignoreAttributeNames = of("provider", "monitor", "application", "module", "registry", "protocol",
                 "interface", "interfaceName", "parameters");
 

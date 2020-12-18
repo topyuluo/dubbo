@@ -30,6 +30,7 @@ import java.util.stream.Stream;
  */
 public interface Invocation {
 
+    // 调用service的唯一标识
     String getTargetServiceUniqueName();
 
     /**
@@ -37,6 +38,8 @@ public interface Invocation {
      *
      * @return method name.
      * @serial
+     *
+     * 调用方法名称
      */
     String getMethodName();
 
@@ -44,6 +47,8 @@ public interface Invocation {
     /**
      * get the interface name
      * @return
+     *
+     * 调用服务名称
      */
     String getServiceName();
 
@@ -52,6 +57,8 @@ public interface Invocation {
      *
      * @return parameter types.
      * @serial
+     *
+     * 参数类型集合
      */
     Class<?>[] getParameterTypes();
 
@@ -59,6 +66,8 @@ public interface Invocation {
      * get parameter's signature, string representation of parameter types.
      *
      * @return parameter's signature
+     *
+     * 参数签名集合
      */
     default String[] getCompatibleParamSignatures() {
         return Stream.of(getParameterTypes())
@@ -71,6 +80,8 @@ public interface Invocation {
      *
      * @return arguments.
      * @serial
+     *
+     * 此次调用具体的参数值
      */
     Object[] getArguments();
 
@@ -79,6 +90,8 @@ public interface Invocation {
      *
      * @return attachments.
      * @serial
+     *
+     * Invocation 可以携带要给kv信息 作为附加信息，一并传递给Provider
      */
     Map<String, String> getAttachments();
 

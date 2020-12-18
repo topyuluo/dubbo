@@ -103,9 +103,28 @@ import static org.apache.dubbo.remoting.Constants.CLIENT_KEY;
  *
  * The bootstrap class of Dubbo
  *
+ *
  * Get singleton instance by calling static method {@link #getInstance()}.
  * Designed as singleton because some classes inside Dubbo, such as ExtensionLoader, are designed only for one instance per process.
  *
+ * <p>
+ *     dubbo的引导类
+ *     通过调用静态方法 getInstance() 获取一个单实例
+ *     之所以设计成单实例的，是因为dubbo 内部的一些类，比如  ExtensionLoader, 被设计成了一个进程只有一个
+ *
+ *     ------------------------------------------------------------------------------------------
+ *     dubbo 启动的时候，将 DubboBootstrapApplicationListener 注册为监听器， 监听ContextRefreshedEvent事件 。
+ *
+ *     主要功能：
+ *          - 持有ConfigManager Environment 对象并且对其初始化 ， 这两个对象都是与配置有关的
+ *          - 更新配置中心配置对象的ConfigCenterConfig的属性值
+ *          - 加载元数据中心对象
+ *          - 检查各个配置对象的属性的是否合法
+ *          - 注册java的关闭钩子
+ *          - 服务段服务的暴漏
+ *
+
+ * </p>
  * @since 2.7.5
  */
 public class DubboBootstrap extends GenericEventListener {
@@ -142,8 +161,18 @@ public class DubboBootstrap extends GenericEventListener {
 
     private final ExecutorRepository executorRepository = ExtensionLoader.getExtensionLoader(ExecutorRepository.class).getDefaultExtension();
 
+    /** 存储了所有dubbo 的配置对象
+     *  类似与一个本地的配置中心，如果要查询配置信息，访问ConfigManager 获取对象的配置对象即可
+     *
+     *
+     *
+     *
+     * */
     private final ConfigManager configManager;
 
+    /**
+     * 也是存储配置信息 ，与ConfigManager 不同的是 ，Environment 主要处理的与系统配置相关，=
+     */
     private final Environment environment;
 
     private ReferenceConfigCache cache;
@@ -504,18 +533,23 @@ public class DubboBootstrap extends GenericEventListener {
             return;
         }
 
-        ApplicationModel.initFrameworkExts();
+        //初始化FrameworkExt 实现类
 
+        ApplicationModel.initFrameworkExts();
+        // 配置中心启动
         startConfigCenter();
 
+        //如果需要 则把注册中心作为配置中心
         useRegistryAsConfigCenterIfNecessary();
 
         loadRemoteConfigs();
 
+        //检查配置是否合法
         checkGlobalConfigs();
 
         initMetadataService();
 
+        //监听器注册
         initEventListener();
 
         if (logger.isInfoEnabled()) {
@@ -582,23 +616,29 @@ public class DubboBootstrap extends GenericEventListener {
     }
 
     private void startConfigCenter() {
+        //获取配置中心的配置信息
         Collection<ConfigCenterConfig> configCenters = configManager.getConfigCenters();
 
         // check Config Center
+        // 配置中心检查
         if (CollectionUtils.isEmpty(configCenters)) {
+            //没有配置中心 则生成一个默认的配置中心放入配置管理器中
             ConfigCenterConfig configCenterConfig = new ConfigCenterConfig();
             configCenterConfig.refresh();
+
             if (configCenterConfig.isValid()) {
                 configManager.addConfigCenter(configCenterConfig);
                 configCenters = configManager.getConfigCenters();
             }
         } else {
+            // 如果有配置中心，则遍历每一个配置，并刷新配置中心的信息
             for (ConfigCenterConfig configCenterConfig : configCenters) {
                 configCenterConfig.refresh();
                 ConfigValidationUtils.validateConfigCenterConfig(configCenterConfig);
             }
         }
 
+        //多个配置中心整合成一个，放入环境中
         if (CollectionUtils.isNotEmpty(configCenters)) {
             CompositeDynamicConfiguration compositeDynamicConfiguration = new CompositeDynamicConfiguration();
             for (ConfigCenterConfig configCenter : configCenters) {
@@ -606,6 +646,7 @@ public class DubboBootstrap extends GenericEventListener {
             }
             environment.setDynamicConfiguration(compositeDynamicConfiguration);
         }
+        // 刷新所有的配置信息
         configManager.refreshAll();
     }
 
@@ -637,14 +678,15 @@ public class DubboBootstrap extends GenericEventListener {
      */
     private void useRegistryAsConfigCenterIfNecessary() {
         // we use the loading status of DynamicConfiguration to decide whether ConfigCenter has been initiated.
+        // 判断 dynamicConfiguration 是否已经组合处理好了， 如果处理好了 ，就直接返回
         if (environment.getDynamicConfiguration().isPresent()) {
             return;
         }
-
+        // 判断配置管理中是否有配置中心，有就直接返回
         if (CollectionUtils.isNotEmpty(configManager.getConfigCenters())) {
             return;
         }
-
+        // 遍历注册中心， 并根据每个注册中心生成一个配置中心的配置
         configManager.getDefaultRegistries().stream()
                 .filter(registryConfig -> registryConfig.getUseAsConfigCenter() == null || registryConfig.getUseAsConfigCenter())
                 .forEach(registryConfig -> {
@@ -671,6 +713,9 @@ public class DubboBootstrap extends GenericEventListener {
                     cc.setHighestPriority(false);
                     configManager.addConfigCenter(cc);
                 });
+        // 再次启动配置中心
+        // 该方法的作用就是检查是否已经有配置中心的信息了，如果有了就算了，如果没有进行信息补充，使用注册中心的信息来补充配置中心的信息， 并在此初始化配置中心。
+        // 这个时候至少已经有一个配置中心了 。
         startConfigCenter();
     }
 
@@ -739,8 +784,10 @@ public class DubboBootstrap extends GenericEventListener {
      * Start the bootstrap
      */
     public DubboBootstrap start() {
+        //只能初始化一次
         if (started.compareAndSet(false, true)) {
             ready.set(false);
+            //初始化方法
             initialize();
             if (logger.isInfoEnabled()) {
                 logger.info(NAME + " is starting...");
@@ -749,13 +796,16 @@ public class DubboBootstrap extends GenericEventListener {
             exportServices();
 
             // Not only provider register
+            // hasExportedServices() 检查是否配置了元数据中心的url 如果配置了  返回true
             if (!isOnlyRegisterProvider() || hasExportedServices()) {
                 // 2. export MetadataService
+                // 用于暴漏本地元数据服务
                 exportMetadataService();
                 //3. Register the local ServiceInstance if required
+                // 用于将dubbo 实例注册到专用于服务发现注册中心
                 registerServiceInstance();
             }
-
+            // 用于处理 referenceConfig 对象
             referServices();
             if (asyncExportingFutures.size() > 0) {
                 new Thread(() -> {
@@ -926,6 +976,10 @@ public class DubboBootstrap extends GenericEventListener {
         }
     }
 
+    /**
+     *  从configManager 中获取 所有的dubbo service
+     *  得到一个列表，遍历列表
+     */
     private void exportServices() {
         configManager.getServices().forEach(sc -> {
             // TODO, compatible with ServiceConfig.export()
@@ -933,14 +987,21 @@ public class DubboBootstrap extends GenericEventListener {
             serviceConfig.setBootstrap(this);
 
             if (exportAsync) {
+                //异步暴漏 使用线程池暴漏服务
                 ExecutorService executor = executorRepository.getServiceExporterExecutor();
                 Future<?> future = executor.submit(() -> {
+                    // 暴漏服务
                     sc.export();
+
                     exportedServices.add(sc);
                 });
+
                 asyncExportingFutures.add(future);
             } else {
+                // 暴漏服务
                 sc.export();
+                // 记录所有的暴漏服务
+                logger.error("暴漏服务 ： " + sc);
                 exportedServices.add(sc);
             }
         });

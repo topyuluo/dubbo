@@ -58,6 +58,35 @@ import static org.apache.dubbo.common.constants.RegistryConstants.ROUTERS_CATEGO
 /**
  * ZookeeperRegistry
  *
+ * <p>
+ *      官方推荐使用zookeeper 作为注册中心
+ *
+ *      Apache Zookeeper 是一个针对分布式系统的，可靠的，可扩展的分布式协调服务
+ *
+ *          Client:
+ *          Leader 节点： 集群的主节点，负责整个Zookeeper集群的写操作，保证集群内事务处理的顺序性，
+ *                       同时还要负责集群中所有的Follower节点与Observer节点的数据同步
+ *
+ *          Follower 节点：集群中的从节点， 可以接收Client读请求并向Client返回结果，并不处理写请求，而是转发到Leader节点完成写入操作
+ *                         还会参与Leader节点的选举
+ *
+ *          Observer 节点： Zookeeper集群中的特殊从节点，不会参与Leader节点的选举，其它功能和Follower相同
+ *
+ *      节点类型：
+ *          持久节点
+ *          持久顺序节点
+ *          临时节点
+ *          临时顺序节点
+ *
+ *
+ *      Watcher:
+ *          主动推送
+ *          一次性
+ *          可见性
+ *          顺序性
+ * </p>
+ *
+ *
  */
 public class ZookeeperRegistry extends FailbackRegistry {
 
@@ -78,12 +107,17 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (url.isAnyHost()) {
             throw new IllegalStateException("registry address == null");
         }
+
+        // 获取组名，默认为 dubbo
         String group = url.getParameter(GROUP_KEY, DEFAULT_ROOT);
         if (!group.startsWith(PATH_SEPARATOR)) {
             group = PATH_SEPARATOR + group;
         }
         this.root = group;
+        // 创建 Zookeeper 客户端，默认为 CuratorZookeeperTransporter
         zkClient = zookeeperTransporter.connect(url);
+
+        // 添加状态监听器
         zkClient.addStateListener((state) -> {
             if (state == StateListener.RECONNECTED) {
                 logger.warn("Trying to fetch the latest urls, in case there're provider changes during connection loss.\n" +
@@ -126,6 +160,10 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     public void doRegister(URL url) {
         try {
+            // 通过 Zookeeper 客户端创建节点，节点路径由 toUrlPath 方法生成，路径格式如下:
+            //   /${group}/${serviceInterface}/providers/${url}
+            // 比如
+            //   /dubbo/org.apache.dubbo.DemoService/providers/dubbo%3A%2F%2F127.0.0.1......
             zkClient.create(toUrlPath(url), url.getParameter(DYNAMIC_KEY, true));
         } catch (Throwable e) {
             throw new RpcException("Failed to register " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);

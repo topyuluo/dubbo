@@ -58,6 +58,8 @@ import static org.springframework.util.StringUtils.hasText;
  * @see Reference
  * @see com.alibaba.dubbo.config.annotation.Reference
  * @since 2.5.7
+ *
+ * 用来处理 reference 注解
  */
 public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBeanPostProcessor implements
         ApplicationContextAware, ApplicationListener<ServiceBeanExportedEvent> {

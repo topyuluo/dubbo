@@ -21,6 +21,12 @@ import org.apache.dubbo.common.extension.Adaptive;
 import org.apache.dubbo.common.extension.SPI;
 import org.apache.dubbo.remoting.Constants;
 
+
+/**
+ * 在 Apache Curator 的基础上封装了一套 Zookeeper  的客户端
+ * 将与Zookeeper 的交互融合到Dubbo 体系之中 。
+ */
+
 @SPI("curator")
 public interface ZookeeperTransporter {
 
