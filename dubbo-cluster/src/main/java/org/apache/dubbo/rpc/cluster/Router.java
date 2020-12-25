@@ -30,6 +30,15 @@ import java.util.List;
  *
  * @see org.apache.dubbo.rpc.cluster.Cluster#join(Directory)
  * @see org.apache.dubbo.rpc.cluster.Directory#list(Invocation)
+ *
+ * <p>
+ *     抽象的是路由器，请求经过Router的时候，会按照用户指定的规则匹配出符合条件的Provider
+ *
+ *
+ *     Router 决定了一次Dubbo调用的目标服务， Router 接口的每个实现类代表了一个路由规则
+ *
+ *     当Conusmer 访问 Provider 时，dubbo 根据路由规则筛选出合适 provider 列表， 之后通过负载均衡算法再次筛选
+ * </p>
  */
 public interface Router extends Comparable<Router> {
 

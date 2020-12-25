@@ -102,6 +102,20 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     private final ZookeeperClient zkClient;
 
+
+    /**
+     * 在 ZookeeperRegistry 的构造方法中，
+     * 会通过 ZookeeperTransporter 创建 ZookeeperClient 实例并连接到 Zookeeper 集群，
+     * 同时还会添加一个连接状态的监听器。在该监听器中主要关注RECONNECTED 状态和 NEW_SESSION_CREATED 状态，
+     * 在当前 Dubbo 节点与 Zookeeper 的连接恢复或是 Session 恢复的时候，会重新进行注册/订阅，防止数据丢失。
+     * @param url
+     * @param zookeeperTransporter
+     *
+     *
+     *
+     * doRegister() 方法和 doUnregister() 方法的实现都是通过 ZookeeperClient 找到合适的路径，然后创建（或删除）相应的 ZNode 节点
+     */
+
     public ZookeeperRegistry(URL url, ZookeeperTransporter zookeeperTransporter) {
         super(url);
         if (url.isAnyHost()) {
@@ -179,6 +193,9 @@ public class ZookeeperRegistry extends FailbackRegistry {
         }
     }
 
+    //doSubscribe() 方法的核心是通过 ZookeeperClient 在指定的 path 上添加 ChildListener 监听器，
+    // 当订阅的节点发现变化的时候，会通过 ChildListener 监听器触发 notify() 方法，
+    // 在 notify() 方法中会触发传入的 NotifyListener 监听器
     @Override
     public void doSubscribe(final URL url, final NotifyListener listener) {
         try {

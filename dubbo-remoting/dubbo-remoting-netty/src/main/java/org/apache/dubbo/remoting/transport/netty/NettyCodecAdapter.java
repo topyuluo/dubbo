@@ -96,6 +96,7 @@ final class NettyCodecAdapter {
 
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent event) throws Exception {
+            System.out.println("NettyCodecAdapter - messageReceived !! ");
             Object o = event.getMessage();
             if (!(o instanceof ChannelBuffer)) {
                 ctx.sendUpstream(event);

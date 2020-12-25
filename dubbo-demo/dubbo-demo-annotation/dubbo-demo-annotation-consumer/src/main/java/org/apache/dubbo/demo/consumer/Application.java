@@ -37,7 +37,6 @@ public class Application {
         String hello = service.sayHello("world 1231231231213");
         System.out.println("result :" + hello);
 
-        Thread.sleep(10000000);
     }
 
     @Configuration

@@ -151,11 +151,11 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
     }
 
     public synchronized T get() {
-        if (destroyed) {
+        if (destroyed) { // 检测当前 config 的状态
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
         }
-        if (ref == null) {
-            init();
+        if (ref == null) { //ref 指向了 服务的代理对象
+            init(); // 初始化 ref字段
         }
         return ref;
     }
@@ -181,12 +181,12 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
     }
     // init 方法主要用于处理配置，以及调用 createProxy 生成代理类
     public synchronized void init() {
-        //避免重复的初始化
+        //检测ReferenceConfig 的初始化状态， 避免重复的初始化
         if (initialized) {
             return;
         }
         //dubbo init
-        if (bootstrap == null) {
+        if (bootstrap == null) { // 检测dubbo的 初始化状态
             bootstrap = DubboBootstrap.getInstance();
             bootstrap.init();
         }
@@ -276,6 +276,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         initialized = true;
 
         // dispatch a ReferenceConfigInitializedEvent since 2.7.4
+        //  触发ReferenceConfig InitializedEvent 事件
         dispatch(new ReferenceConfigInitializedEvent(this, invoker));
     }
 

@@ -79,35 +79,54 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
         this.invokers = invokers;
     }
 
+    /**
+     * 调用ExchangeClient 对象 ，然后确定此次调用是否需要返回值，最后调用exchangeclient.request()方法发送请求，对返回的Future进行简单的封装并返回
+     * @param invocation
+     * @return
+     * @throws Throwable
+     */
     @Override
     protected Result doInvoke(final Invocation invocation) throws Throwable {
         RpcInvocation inv = (RpcInvocation) invocation;
+        //此次调用的方法名
         final String methodName = RpcUtils.getMethodName(invocation);
-        inv.setAttachment(PATH_KEY, getUrl().getPath()); //设置path 到 attachment 中
-        inv.setAttachment(VERSION_KEY, version); // 设置version 到 attachment中
+        //向invocation 中添加附加信息 ，这里将URL的path 和 version  添加到附加信息中
+        inv.setAttachment(PATH_KEY, getUrl().getPath());
+        inv.setAttachment(VERSION_KEY, version);
 
         ExchangeClient currentClient;
-        if (clients.length == 1) {  //选择client
+        //选择一个ExchangeClient实例
+        if (clients.length == 1) {
             currentClient = clients[0];
         } else {
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
         try {
-            boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);  //是否oneway 方式发送
-            int timeout = calculateTimeout(invocation, methodName); //获取超时时间
-            if (isOneway) {
+            //是否oneway 方式发送: 客户端发送消息后，不需要得到响应，所以对于那些不关心服务端响应的请求，比较适合使用oneway 通信 
+            boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
+            //根据调用的方法名称和配置计算此次调用的超时时间
+            int timeout = calculateTimeout(invocation, methodName);
+
+            /** oneway 调用的send 方法 ，twoway 调用的是request 方法 */
+            if (isOneway) { //不需要关注返回值的请求
                 boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
                 currentClient.send(inv, isSent);
+                // 创建一个已完成状态的 asyncrpcresult 对象
                 return AsyncRpcResult.newDefaultAsyncResult(invocation);
-            } else {
-                ExecutorService executor = getCallbackExecutor(getUrl(), inv); //获取线程池
+            } else {  // 需要关注返回值的请求
+                /** 获取处理响应的线程池，对于同步请求，会使用 ThreadlessExecutor ,
+                 * ThreadlessExecutor的原理前面已经分析过了，这里不再赘述；
+                 * 对于异步请求，则会使用共享的线程池，ExecutorRepository接口的相关设计和实现在前面已经详细分析过了，这里不再重复*/
+                ExecutorService executor = getCallbackExecutor(getUrl(), inv);
+                /** 使用上面选出的ExchangeClient执行 request 方法 ， 将请求发出去 , 同时创建相应的 DefaultFuture 返回  这里还添加了一个回调， 取出其中的AppResponse 对象*/
                 CompletableFuture<AppResponse> appResponseFuture =
-                        currentClient.request(inv, timeout, executor).thenApply(obj -> (AppResponse) obj);
+                        currentClient.request(inv, timeout, executor).thenApply(obj -> (AppResponse) obj);  //AppResponse 表示的是服务返回的响应，具体包含三个字段 result(响应结果) ，execption: 服务端返回的异常信息 ，atachments : 服务端返回的附加信息
                 // save for 2.6.x compatibility, for example, TraceFilter in Zipkin uses com.alibaba.xxx.FutureAdapter
                 FutureContext.getContext().setCompatibleFuture(appResponseFuture);
+                //将 appResponse 封装成 AsyncResult 返回
                 AsyncRpcResult result = new AsyncRpcResult(appResponseFuture, inv);
                 result.setExecutor(executor);
-                return result;
+                return result; // 返回一个异步的 ，未完成的RPC 调用，其中会记录对应RPC调用的信息
             }
         } catch (TimeoutException e) {
             throw new RpcException(RpcException.TIMEOUT_EXCEPTION, "Invoke remote method timeout. method: " + invocation.getMethodName() + ", provider: " + getUrl() + ", cause: " + e.getMessage(), e);
@@ -177,4 +196,6 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
         }
         return timeout;
     }
+
+
 }

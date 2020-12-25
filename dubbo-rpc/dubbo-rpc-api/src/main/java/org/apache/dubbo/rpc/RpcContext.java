@@ -49,11 +49,16 @@ import static org.apache.dubbo.rpc.Constants.RETURN_KEY;
  *
  * @export
  * @see org.apache.dubbo.rpc.filter.ContextFilter
+ *
+ * 线程级别的上下文信息
+ * 每个线程绑定一个RpcContext , 底层依赖 ThradLocal 实现
+ * RpcContext 主要用于存储一个线程中一次请求的临时状态看，当线程处理新的请求 或是线程发起新的请求时，RpcContext 中春初的内容就会更新。
  */
 public class RpcContext {
 
     /**
      * use internal thread local to improve performance
+     * 发起请求时，使用该RpcContext 来存储上下文信息
      */
     // FIXME REQUEST_CONTEXT
     private static final InternalThreadLocal<RpcContext> LOCAL = new InternalThreadLocal<RpcContext>() {
@@ -64,6 +69,7 @@ public class RpcContext {
     };
 
     // FIXME RESPONSE_CONTEXT
+    // 在接收到响应的时候，会使用该RpcContext 来存储上下文信息
     private static final InternalThreadLocal<RpcContext> SERVER_LOCAL = new InternalThreadLocal<RpcContext>() {
         @Override
         protected RpcContext initialValue() {

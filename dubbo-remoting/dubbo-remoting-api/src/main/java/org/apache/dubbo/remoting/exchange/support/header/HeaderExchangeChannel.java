@@ -38,6 +38,9 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 
 /**
  * ExchangeReceiver
+ *
+ * HeaderExchangeChannel 是 ExchangeChannel 的实现，它本身是 Channel 的装饰器 ，封装了一个Channel对象
+ * ，其send() 方法和request()方法的实现都是依赖底层的这个channel 对象实现
  */
 final class HeaderExchangeChannel implements ExchangeChannel {
 
@@ -120,6 +123,7 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         return request(request, channel.getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT), executor);
     }
 
+    /** request()方法 返回一个DefaultFuture 对象，表示此次请求-响应是否完成，换句话说， 要收到响应的Future 才算完成 */
     @Override
     public CompletableFuture<Object> request(Object request, int timeout, ExecutorService executor) throws RemotingException {
         if (closed) {

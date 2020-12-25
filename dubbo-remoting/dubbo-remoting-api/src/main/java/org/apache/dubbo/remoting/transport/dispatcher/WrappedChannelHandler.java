@@ -114,6 +114,7 @@ public class WrappedChannelHandler implements ChannelHandlerDelegate {
             if (responseFuture == null) {
                 return getSharedExecutorService();
             } else {
+                // 如果请求关联了线程池，则会获取相关的线程来处理响应
                 ExecutorService executor = responseFuture.getExecutor();
                 if (executor == null || executor.isShutdown()) {
                     executor = getSharedExecutorService();
@@ -121,6 +122,7 @@ public class WrappedChannelHandler implements ChannelHandlerDelegate {
                 return executor;
             }
         } else {
+            //如果时请求消息， 则直接使用公共的线程池处理
             return getSharedExecutorService();
         }
     }

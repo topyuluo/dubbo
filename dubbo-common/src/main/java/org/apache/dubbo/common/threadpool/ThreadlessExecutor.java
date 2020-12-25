@@ -35,16 +35,28 @@ import java.util.concurrent.TimeoutException;
  *
  * Tasks submitted to this executor through {@link #execute(Runnable)} will not get scheduled to a specific thread, though normal executors always do the schedule.
  * Those tasks are stored in a blocking queue and will only be executed when a thread calls {@link #waitAndDrain()}, the thread executing the task
+ *
  * is exactly the same as the one calling waitAndDrain.
+ *
+ * 特殊类型的线程池 内部不管理任何的线程
+ *
+ *
+ * 可以调用 ThreadlessExecutor 的execute() 方法，
+ * 将任务提交给这个线程池，但是这些提交的任务不会被调度到任何线程执行，而是存储在阻塞队列中，
+ * 只有当其他线程调用 ThreadlessExecutor.waitAndDrain() 方法时才会真正执行。
+ * 也说就是，执行任务的与调用 waitAndDrain() 方法的是同一个线程。
+ *
+ * consumer  端会维护一个线程池， 而且线程池时按照连接隔离的 ，即每个连接独享一个线程池 ，  当面临需要消费大量服务且并发数比较大的场景时
+ *
  */
 public class ThreadlessExecutor extends AbstractExecutorService {
     private static final Logger logger = LoggerFactory.getLogger(ThreadlessExecutor.class.getName());
 
-    private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();  // 阻塞队列 用来在io线程和业务线程之间 传递任务
 
-    private ExecutorService sharedExecutor;
+    private ExecutorService sharedExecutor;  // 底层关联的共享线程池， 当乐舞线程已经不在等待响应时 ， 会有该共享线程执行提交的任务
 
-    private CompletableFuture<?> waitingFuture;
+    private CompletableFuture<?> waitingFuture; // 请求对应的DefaultFuture 对象
 
     private boolean finished = false;
 
@@ -82,18 +94,18 @@ public class ThreadlessExecutor extends AbstractExecutorService {
          * 'finished' only appear in waitAndDrain, since waitAndDrain is binding to one RPC call (one thread), the call
          * of it is totally sequential.
          */
-        if (finished) {
+        if (finished) {   // 检测当前ThreadlessExecutor 状态
             return;
         }
-
+        //获取并移除此队列的头部，在元素变得可用之前一致等待 ， 获取阻塞队列中的任务
         Runnable runnable = queue.take();
 
         synchronized (lock) {
-            waiting = false;
-            runnable.run();
+            waiting = false;  // 修改waiting 状态
+            runnable.run(); // 执行任务
         }
 
-        runnable = queue.poll();
+        runnable = queue.poll();  // 如果阻塞队列中还有其它任务，也需要一并执行
         while (runnable != null) {
             try {
                 runnable.run();
@@ -104,7 +116,7 @@ public class ThreadlessExecutor extends AbstractExecutorService {
             runnable = queue.poll();
         }
         // mark the status of ThreadlessExecutor as finished.
-        finished = true;
+        finished = true;  // 修改finished 的状态
     }
 
     public long waitAndDrain(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
@@ -132,9 +144,15 @@ public class ThreadlessExecutor extends AbstractExecutorService {
     @Override
     public void execute(Runnable runnable) {
         synchronized (lock) {
+
+            // 根据 waiting 状体决定任务提交到哪里
+            System.out.println("====================================");
             if (!waiting) {
+                // 判断业务线程是否还在等待响应结果
+                // 不等待 则直接交给共享线程池处理任务
                 sharedExecutor.execute(runnable);
             } else {
+                // 业务线程还在等待， 则将任务写入队列 ， 然后由业务线程自己执行
                 queue.add(runnable);
             }
         }

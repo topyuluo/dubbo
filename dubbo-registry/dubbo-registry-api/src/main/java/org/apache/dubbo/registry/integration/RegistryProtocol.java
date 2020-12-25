@@ -202,8 +202,9 @@ public class RegistryProtocol implements Protocol {
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
         // 获取注册中心 URL，以 zookeeper 注册中心为例，得到的示例 URL 如下：
         // zookeeper://127.0.0.1:2181/com.alibaba.dubbo.registry.RegistryService?application=demo-provider&dubbo=2.0.2&export=dubbo%3A%2F%2F172.17.48.52%3A20880%2Fcom.alibaba.dubbo.demo.DemoService%3Fanyhost%3Dtrue%26application%3Ddemo-provider
-        URL registryUrl = getRegistryUrl(originInvoker);
+        URL registryUrl = getRegistryUrl(originInvoker); // 将registry:// 转化为 zookeeper:// 协议
         // url to export locally
+        /** 获取 export 参数，其中存储了一个 dubbo:// 协议的 Provider URL */
         URL providerUrl = getProviderUrl(originInvoker);
 
         // Subscribe the override data
@@ -219,7 +220,7 @@ public class RegistryProtocol implements Protocol {
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
 
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
-        //export invoker
+        //export invoker 导出服务 ， 底层会通过 执行 DubboProtocol 的 export 方法 启动对应的server
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
         // url to registry
@@ -246,7 +247,7 @@ public class RegistryProtocol implements Protocol {
         exporter.setRegisterUrl(registeredProviderUrl);
         // 订阅 override 数据
         exporter.setSubscribeUrl(overrideSubscribeUrl);
-
+        // 触发 RegistryProtocolListener 监视器
         notifyExport(exporter);
         //Ensure that a new exporter instance is returned every time export
         return new DestroyableExporter<>(exporter);

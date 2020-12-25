@@ -49,6 +49,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 
+/**
+ * CuratorZookeeperClient 是 AbstractZookeeperClient 的唯一实现类
+ */
 public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZookeeperClient.CuratorWatcherImpl, CuratorZookeeperClient.CuratorWatcherImpl> {
 
     protected static final Logger logger = LoggerFactory.getLogger(CuratorZookeeperClient.class);
@@ -66,10 +69,10 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
 
             // 创建 CuratorFramework 构造器
             CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
-                    .connectString(url.getBackupAddress())
-                    .retryPolicy(new RetryNTimes(1, 1000))
-                    .connectionTimeoutMs(timeout)
-                    .sessionTimeoutMs(sessionExpireMs);
+                    .connectString(url.getBackupAddress()) //zk地址(包括备用地址)
+                    .retryPolicy(new RetryNTimes(1, 1000)) // 重试配置
+                    .connectionTimeoutMs(timeout) // 连接超时时长
+                    .sessionTimeoutMs(sessionExpireMs);  // session过期时间
             String authority = url.getAuthority();
             if (authority != null && authority.length() > 0) {
                 builder = builder.authorization("digest", authority.getBytes());
@@ -78,11 +81,13 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
             // 构建 CuratorFramework 实例
             client = builder.build();
 
-            // 添加监听器
+            // 添加监听器  // 添加连接状态的监听
             client.getConnectionStateListenable().addListener(new CuratorConnectionStateListener(url));
 
             // 启动客户端
             client.start();
+
+            // 检测connected这个返回值，连接失败抛出异常
             boolean connected = client.blockUntilConnected(timeout, TimeUnit.MILLISECONDS);
             if (!connected) {
                 throw new IllegalStateException("zookeeper not connected");

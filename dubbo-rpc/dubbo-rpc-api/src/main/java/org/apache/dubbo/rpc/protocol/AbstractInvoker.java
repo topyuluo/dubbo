@@ -138,12 +138,14 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
             logger.warn("Invoker for service " + this + " on consumer " + NetUtils.getLocalHost() + " is destroyed, "
                     + ", dubbo version is " + Version.getVersion() + ", this invoker should not be used any longer");
         }
+        //强制类型转换
         RpcInvocation invocation = (RpcInvocation) inv;
         invocation.setInvoker(this);
+        // 将attachment集合添加到invocation的附加信息中
         if (CollectionUtils.isNotEmptyMap(attachment)) {
             invocation.addObjectAttachmentsIfAbsent(attachment);
         }
-
+        //将rpc context 的附加信息添加到Invocation的附加信息中
         Map<String, Object> contextAttachments = RpcContext.getContext().getObjectAttachments();
         if (CollectionUtils.isNotEmptyMap(contextAttachments)) {
             /**
@@ -154,14 +156,16 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
              */
             invocation.addObjectAttachments(contextAttachments);
         }
-
+        //设置此次调用的模式，异步还是同步
         invocation.setInvokeMode(RpcUtils.getInvokeMode(url, invocation));
+        //如果是异步调用，给这次调用添加一个唯一id
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
 
         AsyncRpcResult asyncResult;
         try {
+            //调用子类实现doInvoker方法
             asyncResult = (AsyncRpcResult) doInvoke(invocation);
-        } catch (InvocationTargetException e) { // biz exception
+        } catch (InvocationTargetException e) { //异常处理
             Throwable te = e.getTargetException();
             if (te == null) {
                 asyncResult = AsyncRpcResult.newDefaultAsyncResult(null, e, invocation);
@@ -184,6 +188,19 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         return asyncResult;
     }
 
+    /**
+     * 根据不同的invokemode  返回不同的线程池实现
+     *
+     * invokemode   由三个可选值
+     *  - SYNC: 表示同步 - 返回 threadlessExecutor - dubbo  默认的调用模式 ，具体含义，客户端发送请求之后，客户端线程会阻塞等待服务端返回响应
+     *  - ASYNC  : 根据URL选择对应的共享线程池
+     *  - FUTURE
+     *
+     *
+     * @param url
+     * @param inv
+     * @return
+     */
     protected ExecutorService getCallbackExecutor(URL url, Invocation inv) {
         ExecutorService sharedExecutor = ExtensionLoader.getExtensionLoader(ExecutorRepository.class).getDefaultExtension().getExecutor(url);
         if (InvokeMode.SYNC == RpcUtils.getInvokeMode(getUrl(), inv)) {

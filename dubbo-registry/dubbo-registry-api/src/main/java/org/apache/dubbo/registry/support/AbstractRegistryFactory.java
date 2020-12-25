@@ -47,6 +47,8 @@ import static org.apache.dubbo.rpc.cluster.Constants.REFER_KEY;
  * <p>
  *     是一个实现了RegistryFactory接口的抽象类， 提供了规范的URL操作，以及缓存Registry对象的公共能力
  *     其中，缓存Registry 对象是使用HashMap<>
+ *
+ *          仅仅是提供了缓存 Registry 对象的功能 并未真正实现 Registry 的创建，具体的创建逻辑是由子类完成的
  * </p>
  */
 public abstract class AbstractRegistryFactory implements RegistryFactory {

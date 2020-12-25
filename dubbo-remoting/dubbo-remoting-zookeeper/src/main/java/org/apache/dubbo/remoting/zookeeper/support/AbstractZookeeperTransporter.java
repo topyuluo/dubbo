@@ -36,10 +36,22 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 /**
  * AbstractZookeeperTransporter is abstract implements of ZookeeperTransporter.
  * <p>
+ *
  * If you want to extends this, implements createZookeeperClient.
  */
+
+
+/**
+ * <P>
+ *     缓存 ZookeeperClient 实例；
+ *     在某个 Zookeeper 节点无法连接时，切换到备用 Zookeeper 地址。
+ * </P>
+ */
 public abstract class AbstractZookeeperTransporter implements ZookeeperTransporter {
+
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperTransporter.class);
+
+    //缓存  ZookeeperClient 实例连接到 Zookeeper 集群之后，就可以了解整个 Zookeeper 集群的拓扑，后续再出现 Zookeeper 节点宕机的情况，就是由 Zookeeper 集群本身以及 Apache Curator 共同完成故障转移。
     private final Map<String, ZookeeperClient> zookeeperClientMap = new ConcurrentHashMap<>();
 
     /**

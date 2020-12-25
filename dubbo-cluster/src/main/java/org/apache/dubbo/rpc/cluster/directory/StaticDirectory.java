@@ -30,6 +30,9 @@ import java.util.List;
 
 /**
  * StaticDirectory
+ *
+ * 这个 Directory  比较的简单 ， 在构造方法中，staticDirectory  会接收一个 Invoker 集合。  并赋值到自身的 Invokers 字段中。
+ * 作为底层的Invoker 集合 ， 在doList 方法中， staticDirectory 会使用RouteChain 中的Router 从 Invokers 集合中过滤出符合路由规则的 Invoker 对象集合。
  */
 public class StaticDirectory<T> extends AbstractDirectory<T> {
     private static final Logger logger = LoggerFactory.getLogger(StaticDirectory.class);
@@ -92,9 +95,10 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
     }
 
     public void buildRouterChain() {
-        RouterChain<T> routerChain = RouterChain.buildChain(getUrl());
+        RouterChain<T> routerChain = RouterChain.buildChain(getUrl()); //创建内置Router集合
+        // 将invokers  与 RouteChain 关联
         routerChain.setInvokers(invokers);
-        this.setRouterChain(routerChain);
+        this.setRouterChain(routerChain);  // 设置 routerChain 字段
     }
 
     @Override

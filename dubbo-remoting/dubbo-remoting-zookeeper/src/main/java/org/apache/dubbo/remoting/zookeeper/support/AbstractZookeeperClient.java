@@ -32,6 +32,16 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 
+
+/**
+ * 缓存当前 ZookeeperClient 实例创建的持久 ZNode 节点；
+ *
+ * 管理当前 ZookeeperClient 实例添加的各类监听器；
+ *
+ * 管理当前 ZookeeperClient 的运行状态。
+ * @param <TargetDataListener>
+ * @param <TargetChildListener>
+ */
 public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildListener> implements ZookeeperClient {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractZookeeperClient.class);

@@ -29,17 +29,22 @@ import java.util.stream.Collectors;
 
 /**
  * Router chain
+ *
+ * Router 决定了一次 Dubbo 调用的目标服务，Router 接口的每个实现类代表了一个路由规则
  */
 public class RouterChain<T> {
 
     // full list of addresses from registry, classified by method name.
+    //当前 RouterChain 对象要过滤的 Invoker 集合
     private List<Invoker<T>> invokers = Collections.emptyList();
 
     // containing all routers, reconstruct every time 'route://' urls change.
+    //当前 RouterChain 中真正要使用的 Router 集合，其中不仅包括了上面 builtinRouters 集合中全部的 Router 对象，还包括通过 addRouters() 方法添加的 Router 对象。
     private volatile List<Router> routers = Collections.emptyList();
 
     // Fixed router instances: ConfigConditionRouter, TagRouter, e.g., the rule for each instance may change but the
     // instance will never delete or recreate.
+    //当前 RouterChain 激活的内置 Router 集合
     private List<Router> builtinRouters = Collections.emptyList();
 
     public static <T> RouterChain<T> buildChain(URL url) {
@@ -47,13 +52,13 @@ public class RouterChain<T> {
     }
 
     private RouterChain(URL url) {
-        List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class)
-                .getActivateExtension(url, "router");
-
+        // 通过ExtensionLoader加载激活的RouterFactory
+        List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class).getActivateExtension(url, "router");
+        // 遍历所有RouterFactory，调用其getRouter()方法创建相应的Router对象
         List<Router> routers = extensionFactories.stream()
                 .map(factory -> factory.getRouter(url))
                 .collect(Collectors.toList());
-
+        // 初始化buildinRouters字段以及routers字段
         initWithRouters(routers);
     }
 
@@ -64,6 +69,7 @@ public class RouterChain<T> {
     public void initWithRouters(List<Router> builtinRouters) {
         this.builtinRouters = builtinRouters;
         this.routers = new ArrayList<>(builtinRouters);
+        // 这里会对routers集合进行排序
         this.sort();
     }
 
@@ -74,12 +80,13 @@ public class RouterChain<T> {
      * from URLs.
      *
      * @param routers routers from 'router://' rules in 2.6.x or before.
+     *  完成内置 Router 的初始化之后，在 Directory 实现中还可以通过 addRouter() 方法添加新的 Router 实例到 routers 字段中
      */
     public void addRouters(List<Router> routers) {
         List<Router> newRouters = new ArrayList<>();
-        newRouters.addAll(builtinRouters);
-        newRouters.addAll(routers);
-        CollectionUtils.sort(newRouters);
+        newRouters.addAll(builtinRouters);  // 添加builtinRouters集合
+        newRouters.addAll(routers);// 添加传入的Router集合
+        CollectionUtils.sort(newRouters);// 重新排序
         this.routers = newRouters;
     }
 
@@ -91,11 +98,12 @@ public class RouterChain<T> {
      *
      * @param url
      * @param invocation
+     * 真正进行路由的是 routers 集合中的 Router 对象
      * @return
      */
     public List<Invoker<T>> route(URL url, Invocation invocation) {
         List<Invoker<T>> finalInvokers = invokers;
-        for (Router router : routers) {
+        for (Router router : routers) { //通过RouteChain 过滤出符合条件的 Invoker  集合
             finalInvokers = router.route(finalInvokers, url, invocation);
         }
         return finalInvokers;

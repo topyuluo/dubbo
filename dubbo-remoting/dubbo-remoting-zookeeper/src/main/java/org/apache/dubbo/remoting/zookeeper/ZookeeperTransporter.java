@@ -30,6 +30,7 @@ import org.apache.dubbo.remoting.Constants;
 @SPI("curator")
 public interface ZookeeperTransporter {
 
+    //connect() 方法用于创建 ZookeeperClient 实例
     @Adaptive({Constants.CLIENT_KEY, Constants.TRANSPORTER_KEY})
     ZookeeperClient connect(URL url);
 

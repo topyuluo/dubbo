@@ -74,6 +74,7 @@ public class NettyServer extends AbstractServer implements RemotingServer {
     public NettyServer(URL url, ChannelHandler handler) throws RemotingException {
         // you can customize name and type of client thread pool by THREAD_NAME_KEY and THREADPOOL_KEY in CommonConstants.
         // the handler will be wrapped: MultiMessageHandler->HeartbeatHandler->handler
+        // 调用 ChannelHandlers.wrap()方法 ， 对传入的channelHandler 对象进行修饰
         super(ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME), ChannelHandlers.wrap(handler, url));
     }
 
@@ -84,16 +85,24 @@ public class NettyServer extends AbstractServer implements RemotingServer {
      */
     @Override
     protected void doOpen() throws Throwable {
+
+        // 创建ServerBootstrap
         bootstrap = new ServerBootstrap();
 
+        //创建boss EventLoopGroup
         bossGroup = NettyEventLoopFactory.eventLoopGroup(1, "NettyServerBoss");
+        //创建worker EventLoopGroup
         workerGroup = NettyEventLoopFactory.eventLoopGroup(
                 getUrl().getPositiveParameter(IO_THREADS_KEY, Constants.DEFAULT_IO_THREADS),
                 "NettyServerWorker");
-
+        // 创建NettyServerHandler，它是一个Netty中的ChannelHandler实现，
+        //不是Dubbo Remoting层的ChannelHandler接口的实现
         final NettyServerHandler nettyServerHandler = new NettyServerHandler(getUrl(), this);
+        // 获取当前NettyServer创建的所有Channel，这里的channels集合中的
+        // Channel不是Netty中的Channel对象，而是Dubbo Remoting层的Channel对象
         channels = nettyServerHandler.getChannels();
 
+        // 初始化ServerBootstrap，指定boss和worker EventLoopGroup
         bootstrap.group(bossGroup, workerGroup)
                 .channel(NettyEventLoopFactory.serverSocketChannelClass())
                 .option(ChannelOption.SO_REUSEADDR, Boolean.TRUE)
@@ -103,24 +112,25 @@ public class NettyServer extends AbstractServer implements RemotingServer {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         // FIXME: should we use getTimeout()?
+                        // 连接空闲超时时间
                         int idleTimeout = UrlUtils.getIdleTimeout(getUrl());
+                        //NettyCodecAdapter中会创建Decoder和Encoder
                         NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyServer.this);
                         if (getUrl().getParameter(SSL_ENABLED_KEY, false)) {
                             ch.pipeline().addLast("negotiation",
                                     SslHandlerInitializer.sslServerHandler(getUrl(), nettyServerHandler));
                         }
                         ch.pipeline()
-                                .addLast("decoder", adapter.getDecoder())
+                                .addLast("decoder", adapter.getDecoder()) // 注册Decoder和Encoder
                                 .addLast("encoder", adapter.getEncoder())
-                                .addLast("server-idle-handler", new IdleStateHandler(0, 0, idleTimeout, MILLISECONDS))
-                                .addLast("handler", nettyServerHandler);
+                                .addLast("server-idle-handler", new IdleStateHandler(0, 0, idleTimeout, MILLISECONDS)) // 注册IdleStateHandler
+                                .addLast("handler", nettyServerHandler); //注册NettyServerHandler
                     }
                 });
         // bind
-        ChannelFuture channelFuture = bootstrap.bind(getBindAddress());
-        channelFuture.syncUninterruptibly();
+        ChannelFuture channelFuture = bootstrap.bind(getBindAddress()); // 绑定指定的地址和端口
+        channelFuture.syncUninterruptibly(); // 等待bind操作完成
         channel = channelFuture.channel();
-
     }
 
     @Override

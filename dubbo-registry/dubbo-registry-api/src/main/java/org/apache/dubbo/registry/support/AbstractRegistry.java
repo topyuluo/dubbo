@@ -71,6 +71,11 @@ import static org.apache.dubbo.registry.Constants.REGISTRY__LOCAL_FILE_CACHE_ENA
  * Registry 的所有实现类 都继承了  AbstractRegistry
  *
  * Registry 会把当前节点订阅的URL 信息缓存到本地的Properties文件中 。
+ *
+ * 本地文件缓存的功能
+ *
+ * AbstractRegistry 通过本地缓存提供了一种容错机制，保证了服务的可靠性。
+ *
  */
 public abstract class AbstractRegistry implements Registry {
 
@@ -395,9 +400,9 @@ public abstract class AbstractRegistry implements Registry {
     /**
      * Notify changes from the Provider side.
      *
-     * @param url      consumer side url
-     * @param listener listener
-     * @param urls     provider latest urls
+     * @param url      consumer side url 客户端url
+     * @param listener listener 第一个参数对应的监听器
+     * @param urls     provider latest urls  全量数据
      */
     protected void notify(URL url, NotifyListener listener, List<URL> urls) {
         if (url == null) {
@@ -417,7 +422,9 @@ public abstract class AbstractRegistry implements Registry {
         // keep every provider's category.
         Map<String, List<URL>> result = new HashMap<>();
         for (URL u : urls) {
+            // 需要Consumer URL与Provider URL匹配
             if (UrlUtils.isMatch(url, u)) {
+                // 根据Provider URL中的category参数进行分类
                 String category = u.getParameter(CATEGORY_KEY, DEFAULT_CATEGORY);
                 List<URL> categoryList = result.computeIfAbsent(category, k -> new ArrayList<>());
                 categoryList.add(u);
@@ -430,10 +437,13 @@ public abstract class AbstractRegistry implements Registry {
         for (Map.Entry<String, List<URL>> entry : result.entrySet()) {
             String category = entry.getKey();
             List<URL> categoryList = entry.getValue();
+            // 更新notified
             categoryNotified.put(category, categoryList);
+            // 调用NotifyListener
             listener.notify(categoryList);
             // We will update our cache file after each notification.
             // When our Registry has a subscribe failure due to network jitter, we can return at least the existing cache URL.
+            // 更新properties集合以及底层的文件缓存
             saveProperties(url);
         }
     }

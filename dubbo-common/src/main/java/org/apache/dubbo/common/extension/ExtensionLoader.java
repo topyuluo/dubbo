@@ -134,6 +134,7 @@ public class ExtensionLoader<T> {
      */
     private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<>();
 
+    //将包含 @Activate 注解的实现类缓存到 cachedActivates 这个实例字段 , key 为扩展名 ，value 为 @Active 注解
     private final Map<String, Object> cachedActivates = new ConcurrentHashMap<>();
 
     /**
@@ -350,6 +351,12 @@ public class ExtensionLoader<T> {
      * @param group  group
      * @return extension list which are activated
      * @see org.apache.dubbo.common.extension.Activate
+     *
+     *
+     *
+     * url 包含了配置信息
+     * values 配置中的指定扩展名
+     * group 为provider 还是 consumer
      */
     public List<T> getActivateExtension(URL url, String[] values, String group) {
         List<T> activateExtensions = new ArrayList<>();

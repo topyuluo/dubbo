@@ -22,6 +22,11 @@ import org.apache.dubbo.remoting.buffer.ChannelBuffer;
 
 import java.io.IOException;
 
+/**
+ * Codec2 接口被 @SPI 接口修饰了，表示该接口是一个扩展接口
+ * 同时 encode() 和 decode()方法都被 @Adaptive 注解修饰，也会生成适配器类
+ * 会根据URL 中的codec值确定具体的扩展实现类
+ */
 @SPI
 public interface Codec2 {
 

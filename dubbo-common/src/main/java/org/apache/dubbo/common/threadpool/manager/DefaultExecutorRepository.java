@@ -52,6 +52,7 @@ public class DefaultExecutorRepository implements ExecutorRepository {
 
     private ScheduledExecutorService reconnectScheduledExecutor;
 
+    //缓存已有的线程池  第一层key ,表示 consumer 还是provider  , 第二层key 表示线程池关联的服务端口
     private ConcurrentMap<String, ConcurrentMap<Integer, ExecutorService>> data = new ConcurrentHashMap<>();
 
     public DefaultExecutorRepository() {
@@ -71,11 +72,15 @@ public class DefaultExecutorRepository implements ExecutorRepository {
      * @return
      */
     public synchronized ExecutorService createExecutorIfAbsent(URL url) {
+
+        // 根据URL中的side参数值决定第一层key
         String componentKey = EXECUTOR_SERVICE_COMPONENT_KEY;
         if (CONSUMER_SIDE.equalsIgnoreCase(url.getParameter(SIDE_KEY))) {
             componentKey = CONSUMER_SIDE;
         }
+        // 如果第一个参数的返回值为空，则将第二参数的返回值放入，并返回
         Map<Integer, ExecutorService> executors = data.computeIfAbsent(componentKey, k -> new ConcurrentHashMap<>());
+        //根据URL中的port值确定第二层key
         Integer portKey = url.getPort();
         ExecutorService executor = executors.computeIfAbsent(portKey, k -> createExecutor(url));
         // If executor has been shut down, create a new one
@@ -84,6 +89,8 @@ public class DefaultExecutorRepository implements ExecutorRepository {
             executor = createExecutor(url);
             executors.put(portKey, executor);
         }
+        // 如果缓存中相应的线程池已关闭，则同样需要调用createExecutor()方法
+        // 创建新的线程池，并替换掉缓存中已关闭的线程持，这里省略这段逻辑
         return executor;
     }
 

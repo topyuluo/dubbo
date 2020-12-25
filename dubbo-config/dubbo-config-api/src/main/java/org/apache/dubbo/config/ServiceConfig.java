@@ -181,6 +181,11 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         dispatch(new ServiceConfigUnexportedEvent(this));
     }
 
+    /***
+     *  1.  检查参数
+     *  2. 根据当前配置决定是延迟发布还是立即发布
+     *  3. 回调相关的监视器
+     */
     public synchronized void export() {
         if (!shouldExport()) { // 是否导出服务，有时只想在本地做一些调试工作，不想导出，这时可以配置 export = false
             return;
@@ -207,7 +212,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             doExport();
         }
 
-        exported();
+        exported(); // 回调相关的监视器
     }
 
     public void exported() {
@@ -338,7 +343,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
     }
 
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
-        String name = protocolConfig.getName();
+        String name = protocolConfig.getName(); //获取协议名称
         if (StringUtils.isEmpty(name)) {  // name 如果为空 就默认取 dubbo
             name = DUBBO;
         }
@@ -497,7 +502,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                 if (CollectionUtils.isNotEmpty(registryURLs)) {    //如果有注册中心则会进行远程暴漏
                     for (URL registryURL : registryURLs) {
                         //if protocol is only injvm ,not register
-                        if (LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) {
+                        if (LOCAL_PROTOCOL.equalsIgnoreCase(url.getProtocol())) { // injvm 协议只在  exportlocal中有用
                             continue;
                         }
                         url = url.addParameterIfAbsent(DYNAMIC_KEY, registryURL.getParameter(DYNAMIC_KEY));

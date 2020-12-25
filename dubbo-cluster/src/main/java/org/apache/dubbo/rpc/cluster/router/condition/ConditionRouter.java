@@ -51,14 +51,16 @@ import static org.apache.dubbo.rpc.cluster.Constants.RUNTIME_KEY;
 /**
  * ConditionRouter
  *
+ * 基于条件表达式的路由实现类
+ *
  */
 public class ConditionRouter extends AbstractRouter {
     public static final String NAME = "condition";
 
     private static final Logger logger = LoggerFactory.getLogger(ConditionRouter.class);
-    protected static final Pattern ROUTE_PATTERN = Pattern.compile("([&!=,]*)\\s*([^&!=,\\s]+)");
-    protected Map<String, MatchPair> whenCondition;
-    protected Map<String, MatchPair> thenCondition;
+    protected static final Pattern ROUTE_PATTERN = Pattern.compile("([&!=,]*)\\s*([^&!=,\\s]+)");  //切分路由规则的正则表达式
+    protected Map<String, MatchPair> whenCondition; //consumer 匹配的条件集合
+    protected Map<String, MatchPair> thenCondition; //provider匹配的条件集合
 
     private boolean enabled;
 
@@ -70,8 +72,8 @@ public class ConditionRouter extends AbstractRouter {
 
     public ConditionRouter(URL url) {
         this.url = url;
-        this.priority = url.getParameter(PRIORITY_KEY, 0);
-        this.force = url.getParameter(FORCE_KEY, false);
+        this.priority = url.getParameter(PRIORITY_KEY, 0); // 路由规则的优先级，用于排序，该字段值越大，优先级越高，默认值为0
+        this.force = url.getParameter(FORCE_KEY, false); //当路由结果为空 时 ，是否强制执行，如果不强制执行，则路由结果为空的路由规则将会自动失效，如果强制执行，则直接返回空的路由结果
         this.enabled = url.getParameter(ENABLED_KEY, true);
         init(url.getParameterAndDecoded(RULE_KEY));
     }
@@ -81,6 +83,7 @@ public class ConditionRouter extends AbstractRouter {
             if (rule == null || rule.trim().length() == 0) {
                 throw new IllegalArgumentException("Illegal route rule!");
             }
+            //将路由规则中的 conusemr. 和provider. 字符串清理掉
             rule = rule.replace("consumer.", "").replace("provider.", "");
             int i = rule.indexOf("=>");
             String whenRule = i < 0 ? null : rule.substring(0, i).trim();
@@ -166,12 +169,10 @@ public class ConditionRouter extends AbstractRouter {
     }
 
     @Override
-    public <T> List<Invoker<T>> route(List<Invoker<T>> invokers, URL url, Invocation invocation)
-            throws RpcException {
+    public <T> List<Invoker<T>> route(List<Invoker<T>> invokers, URL url, Invocation invocation) throws RpcException {
         if (!enabled) {
             return invokers;
         }
-
         if (CollectionUtils.isEmpty(invokers)) {
             return invokers;
         }

@@ -44,9 +44,12 @@ public abstract class AbstractEndpoint extends AbstractPeer implements Resetable
     private int connectTimeout;
 
     public AbstractEndpoint(URL url, ChannelHandler handler) {
-        super(url, handler);
+        super(url, handler); //调用父类的构造方法
+        // 根据URL中的codec参数值，确定此处具体的Codec2实现类
         this.codec = getChannelCodec(url);
+        // 根据URL中的timeout参数确定timeout字段的值，默认1000
         this.timeout = url.getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
+        // 根据URL中的connect.timeout参数确定connectTimeout字段的值，默认3000
         this.connectTimeout = url.getPositiveParameter(Constants.CONNECT_TIMEOUT_KEY, Constants.DEFAULT_CONNECT_TIMEOUT);
     }
 

@@ -42,6 +42,6 @@ public interface RouterFactory {
      * @param url url
      * @return router instance
      */
-    @Adaptive("protocol")
+    @Adaptive("protocol") // 动态生成的适配器 会根据 protocol 参数选择扩展实现
     Router getRouter(URL url);
 }

@@ -88,28 +88,31 @@ public class NettyClient extends AbstractClient {
      * @throws Throwable
      */
     @Override
+
     protected void doOpen() throws Throwable {
+        // 创建NettyClientHandler
         final NettyClientHandler nettyClientHandler = new NettyClientHandler(getUrl(), this);
-        bootstrap = new Bootstrap();
+        bootstrap = new Bootstrap(); // 创建Bootstrap
         bootstrap.group(NIO_EVENT_LOOP_GROUP)
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 //.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, getTimeout())
                 .channel(socketChannelClass());
-
+        // 设置连接超时时间，这里使用到AbstractEndpoint中的connectTimeout字段
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Math.max(3000, getConnectTimeout()));
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
 
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                int heartbeatInterval = UrlUtils.getHeartbeat(getUrl());
+                int heartbeatInterval = UrlUtils.getHeartbeat(getUrl()); // 心跳请求的时间间隔
 
                 if (getUrl().getParameter(SSL_ENABLED_KEY, false)) {
                     ch.pipeline().addLast("negotiation", SslHandlerInitializer.sslClientHandler(getUrl(), nettyClientHandler));
                 }
-
+                // 通过NettyCodecAdapter创建Netty中的编解码器
                 NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyClient.this);
+                // 注册ChannelHandler
                 ch.pipeline()//.addLast("logging",new LoggingHandler(LogLevel.INFO))//for debug
                         .addLast("decoder", adapter.getDecoder())
                         .addLast("encoder", adapter.getEncoder())

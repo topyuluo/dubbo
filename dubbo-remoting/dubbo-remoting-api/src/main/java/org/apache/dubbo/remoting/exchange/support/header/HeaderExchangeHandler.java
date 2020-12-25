@@ -41,12 +41,14 @@ import static org.apache.dubbo.common.constants.CommonConstants.READONLY_EVENT;
 
 /**
  * ExchangeReceiver
+ *
+ * connected() , disconnected() sent() received() caught()方法最终都会转发给上层提供的exchangehandler进行处理
  */
 public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
     protected static final Logger logger = LoggerFactory.getLogger(HeaderExchangeHandler.class);
 
-    private final ExchangeHandler handler;
+    private final ExchangeHandler handler; //
 
     public HeaderExchangeHandler(ExchangeHandler handler) {
         if (handler == null) {
@@ -75,9 +77,10 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    /** 先对解码失败的请求进行处理 ，返回异常响应 ； 然后将正常解码的请求 交给上层实现的 ExchangeHandler 进行处理 ，并添加回调 */
     void handleRequest(final ExchangeChannel channel, Request req) throws RemotingException {
         Response res = new Response(req.getId(), req.getVersion());
-        if (req.isBroken()) {
+        if (req.isBroken()) {  // 请求解码失败
             Object data = req.getData();
 
             String msg;
@@ -97,17 +100,18 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         // find handler by message class.
         Object msg = req.getData();
         try {
+            //交给上层实现的 ExchangeHandler 进行处理
             CompletionStage<Object> future = handler.reply(channel, msg);
-            future.whenComplete((appResult, t) -> {
+            future.whenComplete((appResult, t) -> {  // 处理结束后的回调
                 try {
-                    if (t == null) {
+                    if (t == null) { // 返回正常响应
                         res.setStatus(Response.OK);
                         res.setResult(appResult);
-                    } else {
+                    } else {  //处理过程发生异常，设置异常信息和错误码
                         res.setStatus(Response.SERVICE_ERROR);
                         res.setErrorMessage(StringUtils.toString(t));
                     }
-                    channel.send(res);
+                    channel.send(res); //发送响应
                 } catch (RemotingException e) {
                     logger.warn("Send result to consumer failed, channel is " + channel + ", msg is " + e);
                 }
@@ -162,19 +166,27 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    /***
+     * 针对 oneway 和 twoway 请求执行的不同分支
+     * twoway 请求由 handlerequest 方法进行处理， 其中会关注结果并形成response 返回给客户端
+     * oneway 请求则直接交给上层的 dubboprotocol.requesthandler完成方法调用之后，不会返回任何的response
+     * @param channel channel.
+     * @param message message.
+     * @throws RemotingException
+     */
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
         if (message instanceof Request) {
             // handle request.
             Request request = (Request) message;
-            if (request.isEvent()) {
+            if (request.isEvent()) { // 只读请求
                 handlerEvent(channel, request);
             } else {
                 if (request.isTwoWay()) {
-                    handleRequest(exchangeChannel, request);
+                    handleRequest(exchangeChannel, request); // 双向请求
                 } else {
-                    handler.received(exchangeChannel, request.getData());
+                    handler.received(exchangeChannel, request.getData() ); //
                 }
             }
         } else if (message instanceof Response) {

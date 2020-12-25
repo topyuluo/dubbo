@@ -42,22 +42,27 @@ import static org.apache.dubbo.remoting.Constants.IDLE_TIMEOUT_KEY;
 
 /**
  * AbstractServer
+ *
+ * 对服务端的抽象，实现了服务端的公共逻辑
  */
 public abstract class AbstractServer extends AbstractEndpoint implements RemotingServer {
 
     protected static final String SERVER_THREAD_POOL_NAME = "DubboServerHandler";
     private static final Logger logger = LoggerFactory.getLogger(AbstractServer.class);
+    //当前server 关联的线程池
     ExecutorService executor;
     private InetSocketAddress localAddress;
     private InetSocketAddress bindAddress;
-    private int accepts;
+    private int accepts;  //该server 能接收的最大连接数
     private int idleTimeout;
 
+    //负责管理线程池
     private ExecutorRepository executorRepository = ExtensionLoader.getExtensionLoader(ExecutorRepository.class).getDefaultExtension();
 
     public AbstractServer(URL url, ChannelHandler handler) throws RemotingException {
         // 调用父类构造方法
         super(url, handler);
+        // 根据传入的URL初始化localAddress和bindAddres
         localAddress = getUrl().toInetSocketAddress();
         // 获取 ip 和端口
         String bindIp = getUrl().getParameter(Constants.BIND_IP_KEY, getUrl().getHost());
@@ -71,7 +76,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
         this.accepts = url.getParameter(ACCEPTS_KEY, DEFAULT_ACCEPTS);
         this.idleTimeout = url.getParameter(IDLE_TIMEOUT_KEY, DEFAULT_IDLE_TIMEOUT);
         try {
-            // 调用模板方法 doOpen 启动服务器
+            // 调用模板方法 doOpen 启动该server
             doOpen();
             if (logger.isInfoEnabled()) {
                 logger.info("Start " + getClass().getSimpleName() + " bind " + getBindAddress() + ", export " + getLocalAddress());
@@ -80,6 +85,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Remotin
             throw new RemotingException(url.toInetSocketAddress(), null, "Failed to bind " + getClass().getSimpleName()
                     + " on " + getLocalAddress() + ", cause: " + t.getMessage(), t);
         }
+        // 获取该Server关联的线程池
         executor = executorRepository.createExecutorIfAbsent(url);
     }
 

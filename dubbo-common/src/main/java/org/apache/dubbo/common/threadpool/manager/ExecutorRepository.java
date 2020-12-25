@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- *
+ * 负责管理并创建dubbo中的线程池  DefaultExecutorRepository
  */
 @SPI("default")
 public interface ExecutorRepository {

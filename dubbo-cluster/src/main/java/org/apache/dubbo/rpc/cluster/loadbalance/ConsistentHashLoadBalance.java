@@ -53,15 +53,21 @@ public class ConsistentHashLoadBalance extends AbstractLoadBalance {
     @SuppressWarnings("unchecked")
     @Override
     protected <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation) {
+        // 获取调用的方法名称
         String methodName = RpcUtils.getMethodName(invocation);
+        // 将ServiceKey和方法拼接起来，构成一个key
         String key = invokers.get(0).getUrl().getServiceKey() + "." + methodName;
         // using the hashcode of list to compute the hash only pay attention to the elements in the list
+        // 注意：这是为了在invokers列表发生变化时都会重新生成ConsistentHashSelector对象
         int invokersHashCode = invokers.hashCode();
+        // 根据key获取对应的ConsistentHashSelector对象，selectors是一个ConcurrentMap<String, ConsistentHashSelector>集合
         ConsistentHashSelector<T> selector = (ConsistentHashSelector<T>) selectors.get(key);
         if (selector == null || selector.identityHashCode != invokersHashCode) {
+            // 未查找到ConsistentHashSelector对象，则进行创建
             selectors.put(key, new ConsistentHashSelector<T>(invokers, methodName, invokersHashCode));
             selector = (ConsistentHashSelector<T>) selectors.get(key);
         }
+        // 通过ConsistentHashSelector对象选择一个Invoker对象
         return selector.select(invocation);
     }
 

@@ -26,6 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * EagerThreadPoolExecutor
+ * <p>
+ *     在线程数没有达到最大线程书数的前提下，会有限创建线程来执行任务，而不是放到缓冲队列中。
+ *     当线程数达到最大值时， 才会将任务放入到缓冲队列中，等待空闲线程
+ * </p>
  */
 public class EagerThreadPoolExecutor extends ThreadPoolExecutor {
 
@@ -61,14 +65,18 @@ public class EagerThreadPoolExecutor extends ThreadPoolExecutor {
             throw new NullPointerException();
         }
         // do not increment in method beforeExecute!
+        // 任务提交之前  递增submittedTaskCount
         submittedTaskCount.incrementAndGet();
         try {
-            super.execute(command);
+            super.execute(command);  //提交任务
         } catch (RejectedExecutionException rx) {
             // retry to offer the task into queue.
             final TaskQueue queue = (TaskQueue) super.getQueue();
             try {
+                //任务被拒绝之后，会在此放入队列中缓存 ， 等待空闲线程执行
                 if (!queue.retryOffer(command, 0, TimeUnit.MILLISECONDS)) {
+
+                    //再次入队被拒绝， 会尝试再次放入队列中缓存，等待空闲线程执行
                     submittedTaskCount.decrementAndGet();
                     throw new RejectedExecutionException("Queue capacity is full.", rx);
                 }

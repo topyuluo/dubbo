@@ -42,11 +42,13 @@ import static org.apache.dubbo.remoting.utils.UrlUtils.getIdleTimeout;
 
 /**
  * DefaultMessageClient
+ * 维持与Server 的长连接状态 通过定时发送心跳消息实现
+ * 因故障掉线后， 进行重连， 通过定时检查连接状态实现的
  */
 public class HeaderExchangeClient implements ExchangeClient {
 
-    private final Client client;
-    private final ExchangeChannel channel;
+    private final Client client;  //被修饰的Client对象 ，  HeaderExchangeClient 中对 Client接口的实现， 都会委托给该对象进行处理
+    private final ExchangeChannel channel; // Client 与服务建立的连接， HeaderExchangeChannel 也是一个装饰器
 
     private static final HashedWheelTimer IDLE_CHECK_TIMER = new HashedWheelTimer(
             new NamedThreadFactory("dubbo-client-idleCheck", true), 1, TimeUnit.SECONDS, TICKS_PER_WHEEL);
@@ -187,11 +189,17 @@ public class HeaderExchangeClient implements ExchangeClient {
     }
 
     private void startHeartBeatTask(URL url) {
+        //client 的具体实现决定是否启动该心跳任务
         if (!client.canHandleIdle()) {
+
             AbstractTimerTask.ChannelProvider cp = () -> Collections.singletonList(HeaderExchangeClient.this);
+            // 计算心跳间隔，最小间隔不能低于1s
             int heartbeat = getHeartbeat(url);
+            // 创建心跳任务
             long heartbeatTick = calculateLeastDuration(heartbeat);
+
             this.heartBeatTimerTask = new HeartbeatTimerTask(cp, heartbeatTick, heartbeat);
+            // 提交到IDLE_CHECK_TIMER 这个时间轮中等待执行
             IDLE_CHECK_TIMER.newTimeout(heartBeatTimerTask, heartbeatTick, TimeUnit.MILLISECONDS);
         }
     }

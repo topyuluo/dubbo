@@ -24,12 +24,17 @@ import static org.apache.dubbo.rpc.Constants.PROXY_KEY;
 
 /**
  * ProxyFactory. (API/SPI, Singleton, ThreadSafe)
+ *
+ * 代理对象抽象类， 默认使用javassist 来创建代码对象
+ *
  */
 @SPI("javassist")
 public interface ProxyFactory {
 
     /**
      * create proxy.
+     *
+     * 为 Invoker  对象创建代理对象
      *
      * @param invoker
      * @return proxy
@@ -39,7 +44,7 @@ public interface ProxyFactory {
 
     /**
      * create proxy.
-     *
+     * 为 Invoker  对象创建代理对象
      * @param invoker
      * @return proxy
      */
@@ -49,6 +54,7 @@ public interface ProxyFactory {
     /**
      * create invoker.
      *
+     * 将代理对象封装成 Invoker 对象
      * @param <T>
      * @param proxy
      * @param type
